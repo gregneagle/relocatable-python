@@ -85,6 +85,24 @@ def fix_dep(some_file, old_install_name, new_install_name):
     do(cmd)
 
 
+def get_rpaths(some_file):
+    '''returns rpaths stored in an executable'''
+    cmd = [OTOOL, "-l", some_file]
+    output_lines = subprocess.check_output(cmd).splitlines()
+    rpaths = []
+    for (index, line) in enumerate(output_lines):
+        if "cmd LC_RPATH" in line and index + 2 <= len(output_lines):
+            rpath_line = output_lines[index + 2]
+            rpath_line = rpath_line.lstrip()
+            if rpath_line.startswith("path "):
+                rpath_line = rpath_line[5:]
+            tail = rpath_line.find(" (offset ")
+            if tail != -1:
+                rpath_line = rpath_line[0:tail]
+            rpaths.append(rpath_line)
+    return rpaths
+
+
 def add_rpath(some_file):
     '''adds an rpath to the file'''
     framework_loc = framework_parent_dir(some_file)
@@ -92,8 +110,9 @@ def add_rpath(some_file):
         "@executable_path", 
         os.path.relpath(framework_loc, 
                         os.path.dirname(some_file))) + "/"
-    cmd = [INSTALL_NAME_TOOL, "-add_rpath", rpath, some_file]
-    do(cmd)
+    if rpath not in get_rpaths(some_file):
+        cmd = [INSTALL_NAME_TOOL, "-add_rpath", rpath, some_file]
+        do(cmd)
 
 
 def get_deps(some_file):

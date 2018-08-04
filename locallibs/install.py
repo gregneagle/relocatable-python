@@ -18,8 +18,13 @@ import os
 import subprocess
 import sys
 
-EXTRA_PKGS = [
+PYTHON2_EXTRA_PKGS = [
     "xattr==0.6.4",
+    "pyobjc",
+]
+
+PYTHON3_EXTRA_PKGS = [
+    "xattr",
     "pyobjc",
 ]
 
@@ -27,7 +32,7 @@ EXTRA_PKGS = [
 def ensure_pip(framework_path, version="2.7"):
     '''Ensure pip is installed in our Python framework'''
     python_path = os.path.join(
-        framework_path, "Versions", version, "bin/python")
+        framework_path, "Versions", version, "bin/python" + version)
     if not os.path.exists(python_path):
         print >> sys.stderr, "No python at %s" % python_path
         return
@@ -39,9 +44,9 @@ def ensure_pip(framework_path, version="2.7"):
 def install(pkgname, framework_path, version="2.7"):
     '''Use pip to install a Python pkg into framework_path'''
     python_path = os.path.join(
-        framework_path, "Versions", version, "bin/python")
+        framework_path, "Versions", version, "bin/python" + version)
     if not os.path.exists(python_path):
-        print sys.stderr, "No python at %s" % python_path
+        print >> sys.stderr, "No python at %s" % python_path
         return
     cmd = [python_path, "-m", "pip", "install", pkgname]
     print "Installing %s..." % pkgname
@@ -51,5 +56,9 @@ def install(pkgname, framework_path, version="2.7"):
 def install_extras(framework_path, version="2.7"):
     '''install all extra pkgs into Python framework path'''
     ensure_pip(framework_path, version=version)
-    for pkgname in EXTRA_PKGS:
-        install(pkgname, framework_path, version=version)
+    if version.startswith("2."):
+        for pkgname in PYTHON2_EXTRA_PKGS:
+            install(pkgname, framework_path, version=version)
+    if version.startswith("3."):
+        for pkgname in PYTHON3_EXTRA_PKGS:
+            install(pkgname, framework_path, version=version)
