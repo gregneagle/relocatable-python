@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import os
 import subprocess
 import sys
@@ -27,7 +29,7 @@ FILETOOL = "/usr/bin/file"
 
 def do(cmd):
     '''Prints and executes cmd'''
-    print " ".join(cmd)
+    print(" ".join(cmd))
     subprocess.check_call(cmd)
 
 
@@ -35,7 +37,7 @@ def fix_modes(framework_dir):
     '''Make sure all files are set so owner can read/write and everyone else
        can only read'''
     cmd = [CHMOD, "-R", "u+rw,g+r,g-w,o+r,o-w", framework_dir]
-    print "Ensuring correct modes for files in %s..." % framework_dir
+    print("Ensuring correct modes for files in %s..." % framework_dir)
     subprocess.check_call(cmd)
 
 
@@ -88,7 +90,7 @@ def fix_dep(some_file, old_install_name, new_install_name):
 def get_rpaths(some_file):
     '''returns rpaths stored in an executable'''
     cmd = [OTOOL, "-l", some_file]
-    output_lines = subprocess.check_output(cmd).splitlines()
+    output_lines = subprocess.check_output(cmd).decode("utf-8").splitlines()
     rpaths = []
     for (index, line) in enumerate(output_lines):
         if "cmd LC_RPATH" in line and index + 2 <= len(output_lines):
@@ -118,7 +120,7 @@ def add_rpath(some_file):
 def get_deps(some_file):
     '''Return a list of dependencies for some_file'''
     cmd = [OTOOL, "-L", some_file]
-    output_lines = subprocess.check_output(cmd).splitlines()
+    output_lines = subprocess.check_output(cmd).decode("utf-8").splitlines()
     deps = []
     if len(output_lines) > 1:
         for line in output_lines[1:]:
@@ -133,7 +135,7 @@ def get_deps(some_file):
 def get_install_name(some_file):
     '''Returns the install_name of a shared library'''
     cmd = [OTOOL, "-D", some_file]
-    output_lines = subprocess.check_output(cmd).splitlines()
+    output_lines = subprocess.check_output(cmd).decode("utf-8").splitlines()
     if len(output_lines) > 1:
         return output_lines[1]
     return ""
@@ -180,11 +182,8 @@ def base_install_name(full_framework_path):
 
 def analyze(some_dir):
     """Finds files we need to tweak"""
-    print "Analyzing %s..." % some_dir
+    print("Analyzing %s..." % some_dir)
     prefix = base_install_name(some_dir)
-    #if prefix == "":
-    #    print "Can't determine base install_name"
-    #    exit()
     data = {}
     data["executables"] = []
     data["dylibs"] = []
@@ -209,7 +208,7 @@ def analyze(some_dir):
                         data["dylibs"].append(info)
                 else:
                     cmd = [FILETOOL, "-b", filepath]
-                    output = subprocess.check_output(cmd)
+                    output = subprocess.check_output(cmd).decode("utf-8")
                     if "Mach-O 64-bit executable" in output:
                         info = make_info(filepath)
                         if deps_contain_prefix(info, prefix):
@@ -239,7 +238,7 @@ def relocatablize(framework_path):
             for item in files:
                 if old_install_name in item["dependencies"]:
                     fix_dep(item["path"], old_install_name, new_install_name)
-        print
+        print()
     # add rpaths to executables
     for item in framework_data["executables"]:
         add_rpath(item["path"])

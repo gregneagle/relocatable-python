@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import os
 import optparse
 
@@ -51,13 +53,14 @@ def main():
         base_url=options.baseurl
     ).download_and_extract(destination=options.destination)
 
-    relocatablize(framework_path)
-    short_version = ".".join(options.python_version.split(".")[0:2])
-    install_extras(framework_path, version=short_version)
+    if framework_path:
+        relocatablize(framework_path)
+        short_version = ".".join(options.python_version.split(".")[0:2])
+        install_extras(framework_path, version=short_version)
 
-    print
-    print "Done!"
-    print "Customized, relocatable framework is at %s" % framework_path
+        print()
+        print("Done!")
+        print("Customized, relocatable framework is at %s" % framework_path)
 
 
 if __name__ == '__main__':

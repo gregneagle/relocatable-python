@@ -14,11 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+
 
 CURL = "/usr/bin/curl"
 DITTO = "/usr/bin/ditto"
@@ -55,7 +58,7 @@ class FrameworkGetter(object):
         (file_handle, destination_path) = tempfile.mkstemp()
         os.close(file_handle)
         cmd = [CURL, "-o", destination_path , url]
-        print "Downloading %s..." % url
+        print("Downloading %s..." % url)
         subprocess.check_call(cmd)
         self.downloaded_pkg_path = destination_path
 
@@ -65,7 +68,7 @@ class FrameworkGetter(object):
         self.expanded_path = self.downloaded_pkg_path + "__expanded__"
         cmd = [PKGUTIL, "--expand",
                self.downloaded_pkg_path, self.expanded_path]
-        print "Expanding %s..." % self.downloaded_pkg_path
+        print("Expanding %s..." % self.downloaded_pkg_path)
         subprocess.check_call(cmd)
 
     def extract_framework(self):
@@ -73,7 +76,7 @@ class FrameworkGetter(object):
         payload = os.path.join(
             self.expanded_path, "Python_Framework.pkg/Payload")
         cmd = [DITTO, "-xz", payload, self.destination]
-        print "Extracting %s to %s..." % (payload, self.destination)
+        print("Extracting %s to %s..." % (payload, self.destination))
         subprocess.check_call(cmd)
 
     def download_and_extract(self, destination="."):
@@ -83,8 +86,9 @@ class FrameworkGetter(object):
         if os.path.basename(destination) != "Python.framework":
             destination = os.path.join(destination, "Python.framework")
         if os.path.exists(destination):
-            print >> sys.stderr, "Destination %s already exists!" % destination
-            return
+            print("Destination %s already exists!" % destination,
+                  file=sys.stderr)
+            return None
         self.destination = destination
         self.download()
         self.expand()

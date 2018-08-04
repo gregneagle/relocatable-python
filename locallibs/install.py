@@ -14,9 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import os
 import subprocess
 import sys
+
 
 PYTHON2_EXTRA_PKGS = [
     "xattr==0.6.4",
@@ -37,8 +40,8 @@ def ensure_pip(framework_path, version="2.7"):
         print >> sys.stderr, "No python at %s" % python_path
         return
     cmd = [python_path, "-m", "ensurepip"]
-    print "Ensuring pip is installed..."
-    print subprocess.check_output(cmd)
+    print("Ensuring pip is installed...")
+    subprocess.check_call(cmd)
 
 
 def install(pkgname, framework_path, version="2.7"):
@@ -49,16 +52,19 @@ def install(pkgname, framework_path, version="2.7"):
         print >> sys.stderr, "No python at %s" % python_path
         return
     cmd = [python_path, "-m", "pip", "install", pkgname]
-    print "Installing %s..." % pkgname
-    print subprocess.check_output(cmd)
+    print("Installing %s..." % pkgname)
+    subprocess.check_call(cmd)
 
 
 def install_extras(framework_path, version="2.7"):
     '''install all extra pkgs into Python framework path'''
+    print()
     ensure_pip(framework_path, version=version)
     if version.startswith("2."):
         for pkgname in PYTHON2_EXTRA_PKGS:
+            print()
             install(pkgname, framework_path, version=version)
     if version.startswith("3."):
         for pkgname in PYTHON3_EXTRA_PKGS:
+            print()
             install(pkgname, framework_path, version=version)
