@@ -1,0 +1,327 @@
+References:
+https://www.mikeash.com/pyblog/friday-qa-2009-11-06-linking-and-install-names.html
+https://gitee.com/tbfish/Sigil/blob/master/docs/Building_A_Relocatable_Python_Framework_on_MacOSX.txt#L92
+https://pyvideo.org/pycon-us-2011/pycon-2011--reverse-engineering-ian-bicking--39-s.html
+https://www.python.org/downloads/release/python-2715/
+
+
+# A Quick Guide: On Mac OS X, one may use:
+#     "otool -D <file>" to view the install name of a dylib
+#     "otool -L <file>" to view the dependencies
+#     "otool -l <file> | grep LC_RPATH -A2" to view the RPATHs
+#     "install_name_tool -id ..." to change an install name
+#     "install_name_tool -change ..." to change the dependencies
+#     "install_name_tool -rpath ... -add_rpath ... -delete_rpath ..." to change RPATHs
+
+
+# Patching python.org framework to make it relocatable:
+
+## change id of the shared lib to an @rpath-based id
+cd path/to/copy/of/Python.framework/Versions/2.7
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/Python Python
+
+## patch the python interpreters
+cd bin
+sudo install_name_tool -change  /Library/Frameworks/Python.framework/Versions/2.7/Python @rpath/Python.framework/Versions/2.7/Python python2.7
+sudo install_name_tool -change  /Library/Frameworks/Python.framework/Versions/2.7/Python @rpath/Python.framework/Versions/2.7/Python pythonw2.7
+sudo install_name_tool -add_rpath @executable_path/../../../../ python2.7
+sudo install_name_tool -add_rpath @executable_path/../../../../ pythonw2.7
+
+## patch the executable in the Python.app
+cd ../Resources/Python.app/Contents/MacOS/
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/Python @rpath/Python.framework/Versions/2.7/Python Python
+sudo install_name_tool -add_rpath @executable_path/../../../../../../../ Python
+
+######
+Will need to do similar things to the dylibs in
+Python.framework/Versions/2.7/lib/
+and the .so files in
+Python.framework/Versions/2.7/lib/python2.7/lib-dynload/
+
+Example:
+######
+
+cd path/to/copy/of/Python.framework/Versions/2.7/lib
+% otool -L libcrypto.1.0.0.dylib
+libcrypto.1.0.0.dylib:
+	/Library/Frameworks/Python.framework/Versions/2.7/lib/libcrypto.1.0.0.dylib (compatibility version 1.0.0, current version 1.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1197.1.1)
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libssl.1.0.0.dylib libssl.1.0.0.dylib
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libcrypto.1.0.0.dylib libcrypto.1.0.0.dylib
+
+## similar for curses libraries:
+#libncursesw.5.dylib
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libncursesw.5.dylib libncursesw.5.dylib
+
+## libformw.5.dylib
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libformw.5.dylib libformw.5.dylib
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libncursesw.5.dylib @rpath/Python.framework/Versions/2.7/lib/libncursesw.5.dylib libformw.5.dylib
+
+## libmenuw.5.dylib
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libmenuw.5.dylib libmenuw.5.dylib
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libncursesw.5.dylib @rpath/Python.framework/Versions/2.7/lib/libncursesw.5.dylib libmenuw.5.dylib
+
+## libpanelw.5.dylib
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libpanelw.5.dylib libpanelw.5.dylib
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libncursesw.5.dylib @rpath/Python.framework/Versions/2.7/lib/libncursesw.5.dylib libpanelw.5.dylib
+
+## tkinter
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libtcl8.6.dylib libtcl8.6.dylib
+sudo install_name_tool -id @rpath/Python.framework/Versions/2.7/lib/libtk8.6.dylib libtk8.6.dylib
+
+
+# now fix the .so files that refer to the dylibs
+
+cd path/to/copy/of/Python.framework/Versions/2.7/lib/python2.7/lib-dynload/
+
+## hashlib
+otool -L _hashlib.so 
+_hashlib.so:
+	/Library/Frameworks/Python.framework/Versions/2.7/lib/libssl.1.0.0.dylib (compatibility version 1.0.0, current version 1.0.0)
+	/Library/Frameworks/Python.framework/Versions/2.7/lib/libcrypto.1.0.0.dylib (compatibility version 1.0.0, current version 1.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1197.1.1)
+
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libssl.1.0.0.dylib @rpath/Python.framework/Versions/2.7/lib/libssl.1.0.0.dylib _hashlib.so
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libcrypto.1.0.0.dylib @rpath/Python.framework/Versions/2.7/lib/libcrypto.1.0.0.dylib _hashlib.so
+
+## curses
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libncursesw.5.dylib @rpath/Python.framework/Versions/2.7/lib/libncursesw.5.dylib _curses.so
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libpanelw.5.dylib @rpath/Python.framework/Versions/2.7/lib/libpanelw.5.dylib _curses_panel.so
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libncursesw.5.dylib @rpath/Python.framework/Versions/2.7/lib/libncursesw.5.dylib _curses_panel.so
+
+## tkinter
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libtcl8.6.dylib @rpath/Python.framework/Versions/2.7/lib/libtcl8.6.dylib _tkinter.so
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libtk8.6.dylib @rpath/Python.framework/Versions/2.7/lib/libtk8.6.dylib _tkinter.so
+
+## readline
+sudo install_name_tool -change /Library/Frameworks/Python.framework/Versions/2.7/lib/libncursesw.5.dylib @rpath/Python.framework/Versions/2.7/lib/libncursesw.5.dylib readline.so
+
+# Testing
+
+cd path/to/copy/of/Python.framework/Versions/2.7/bin
+bash-3.2$ ./python
+Python 2.7.15 (v2.7.15:ca079a3ea3, Apr 29 2018, 20:59:26) 
+[GCC 4.2.1 Compatible Apple LLVM 6.0 (clang-600.0.57)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import sys
+>>> sys.path
+
+####
+(The listed paths should be all within the framework copy. Example, where the framework is in /Users/Shared:)
+####
+
+['', '/Users/Shared/Python.framework/Versions/2.7/lib/python27.zip', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7/plat-darwin', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7/plat-mac', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7/plat-mac/lib-scriptpackages', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7/lib-tk', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7/lib-old', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7/lib-dynload', '/Users/Shared/Python.framework/Versions/2.7/lib/python2.7/site-packages']
+
+>>> import hashlib
+>>>
+## (Should return without errors)
+
+
+
+# Adding additional packages to the framework:
+
+## Install pip
+cd path/to/Python.framework/Versions/2.7/bin
+./python -m ensurepip
+Collecting setuptools
+Collecting pip
+Installing collected packages: setuptools, pip
+Successfully installed pip-9.0.3 setuptools-39.0.1
+
+
+## Install xattr
+./python -m pip install xattr
+Collecting xattr
+  Using cached https://files.pythonhosted.org/packages/85/2f/870b24d3f32084e06cd67c9765666ba2edb44afc4f120a42f6413e18bd4b/xattr-0.9.6-cp27-cp27m-macosx_10_12_x86_64.whl
+Collecting cffi>=1.0.0 (from xattr)
+  Using cached https://files.pythonhosted.org/packages/7e/4a/b647e46faaa2dcfb16069b6aad2d8509982fd63710a325b8ad7db80f18be/cffi-1.11.5-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pycparser (from cffi>=1.0.0->xattr)
+  Using cached https://files.pythonhosted.org/packages/8c/2d/aad7f16146f4197a11f8e91fb81df177adcc2073d36a17b1491fd09df6ed/pycparser-2.18.tar.gz
+Installing collected packages: pycparser, cffi, xattr
+  Running setup.py install for pycparser ... done
+Successfully installed cffi-1.11.5 pycparser-2.18 xattr-0.9.6
+You are using pip version 9.0.3, however version 18.0 is available.
+You should consider upgrading via the 'pip install --upgrade pip' command.
+
+## Install pyobjc
+bash-3.2$ ./python -m pip install pyobjc
+Collecting pyobjc
+  Using cached https://files.pythonhosted.org/packages/c3/33/24f7d54b5000d5e49f093f985d2631948628baf36f1940109710260e126c/pyobjc-4.2.2-py2-none-any.whl
+Collecting pyobjc-framework-CoreBluetooth==4.2.2; platform_release >= "14.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/03/16/e59c6c89a33738e3e1e6798e593fd18093e49a70d9e766509c21d57ea106/pyobjc_framework_CoreBluetooth-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-ScriptingBridge==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/22/53/446dc67fab0a9e16eaabe44ed958ea4771f312cc9bb7e4234029fa605923/pyobjc_framework_ScriptingBridge-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-AVFoundation==4.2.2; platform_release >= "11.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/52/8f/fc1e436c166293905c9c3d70d42364d1391fdf92c6dcf6bb9912a69a7eae/pyobjc_framework_AVFoundation-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-CoreSpotlight==4.2.2; platform_release >= "17.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/2d/eb/8d0f876a324df6b760018dd57233ceb7153ea78b637b6ac81217a3745428/pyobjc_framework_CoreSpotlight-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-CoreLocation==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/16/11/26691c327ab9ab54839fdb052a21e0fece3b14a81e36f7553ffa41ef21ac/pyobjc_framework_CoreLocation-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-SpriteKit==4.2.2; platform_release >= "13.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/26/79/6f558c1b3c5b6d79da3ccf9017e332ddfa56c813801297e2457b9638caca/pyobjc_framework_SpriteKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-Intents==4.2.2; platform_release >= "16.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/d1/b9/696413fe37d6b27284a31ca7a1ca93b1390cbf75b633efd8d4d7e6089b64/pyobjc_framework_Intents-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-CoreWLAN==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/6b/a0/a300b06b1b74a44baed7e418db01f9d37829419a9d3c0625f22fc858601e/pyobjc_framework_CoreWLAN-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-DiskArbitration==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ee/01/a15ef7ab910f56a70fe77bf300aa60d44fb53bbe94f68932904381431698/pyobjc_framework_DiskArbitration-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-FinderSync==4.2.2; platform_release >= "14.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ce/b1/baf97289d2a0a1841da5b2ac3d9108290946f4c984c9f4277cb74d0f2e73/pyobjc_framework_FinderSync-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-CryptoTokenKit==4.2.2; platform_release >= "14.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/81/5c/08d3e8541ec9323b22bdb4d6498c26d3efa994f99cb74ec8cbe2527bfd44/pyobjc_framework_CryptoTokenKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-CoreData==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/c0/c2/9243e70617a2b9ecae5e08b50370aad7596f7b020c82c1bdea639ee774c4/pyobjc_framework_CoreData-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-PubSub==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/d4/58/fb1b41f884341838cd3932459c9f6c2471ec182f86c033e929e3ee414441/pyobjc_framework_PubSub-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-SyncServices==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/e3/02/4f923deec8f0d947dd9e96e8632483ba06616f260dab7d00d80061b22e3c/pyobjc_framework_SyncServices-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-libdispatch==4.2.2; platform_release >= "12.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/eb/e9/6b7435800285af9849a437a39a12bc704656395b02bf914112357e4eafac/pyobjc_framework_libdispatch-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-InstallerPlugins==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/55/e7/a4a2e8d546b50e44fce3fd153d22b9f372652248d7016b080ed3607ed074/pyobjc_framework_InstallerPlugins-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-Accounts==4.2.2; platform_release >= "12.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/45/ec/487bd10a95ebf85aabaca691e9db9e208dd73323ea4030abf958d4ee6b1a/pyobjc_framework_Accounts-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-AVKit==4.2.2; platform_release >= "13.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/13/37/5db8199184e0ce8d27decf1ac123f1ec61fff20612bd6d5ab184d5904ac8/pyobjc_framework_AVKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-EventKit==4.2.2; platform_release >= "12.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/2c/2b/64c83d3b699e461f25fc151ac8d33a5a7e52a78e75d3047247c309938f9b/pyobjc_framework_EventKit-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-AddressBook==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/92/10/2e7ba8c3929a0682d9bf1f3c78c0c7336235fc36fb278ce8b05e8df0e045/pyobjc_framework_AddressBook-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-Quartz==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/b5/96/e6350ade0bc2522085e1f6459549556657e5fb0c63f79805c819bd4c0371/pyobjc_framework_Quartz-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-GameKit==4.2.2; platform_release >= "12.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/77/21/104a8c78a22fa80bba4b3a9773c89fb995983179fee01575357c483b4e0e/pyobjc_framework_GameKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-Automator==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/18/22/77f751732541d3592343f6e4a30c42ecec1febe2139ac2da58497824d71e/pyobjc_framework_Automator-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-StoreKit==4.2.2; platform_release >= "11.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ec/fb/9fa3f9c3cdb6a086e5265e0fd857ff37e84e2b5dde17ba16275a26327435/pyobjc_framework_StoreKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-MapKit==4.2.2; platform_release >= "13.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ec/49/1ac4172b0234ba72839597471fca748b70af307f3cdf0b3eba26e79ca1a8/pyobjc_framework_MapKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-Photos==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/af/8a/4666e54ffb9f0c05d2ebab31336a7b3c96a3a6513477f5ee32cc32fabe86/pyobjc_framework_Photos-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-CoreML==4.2.2; platform_release >= "17.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/f9/30/94f799d29f83c27ceff6b8826d6e2bda0002571becaf6fbeff85e83fd155/pyobjc_framework_CoreML-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-MediaPlayer==4.2.2; platform_release >= "16.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/58/ca/f05cac520b23715c7aef742489d0b7d29867efb6b7a9ff92d30e16d2952c/pyobjc_framework_MediaPlayer-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-MediaAccessibility==4.2.2; platform_release >= "13.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/f0/b1/9493f4e1f1a8fa2e06cd9ecbb15ce03c472df3b39d19ea93bc7650a59bf2/pyobjc_framework_MediaAccessibility-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-Social==4.2.2; platform_release >= "12.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/b6/e4/a565f477ded6acb208b8339e80386204bb4a87212fe741286e92fea3c305/pyobjc_framework_Social-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-InstantMessage==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/83/76/6dfcfdb34b900f7e0233d55e8ea6507ce18a7a088c67303b7dcb0b438575/pyobjc_framework_InstantMessage-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-ColorSync==4.2.2; platform_release >= "17.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/51/e7/d4175df2f9a90c17ea18a99254aea9406d9bec4a3d54cc4cf35ed0d904b0/pyobjc_framework_ColorSync-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-NotificationCenter==4.2.2; platform_release >= "14.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/d6/3d/3186806b0bf107ec88cea6e3fd6164c21b83d010b1f5efbd8594fffb0b27/pyobjc_framework_NotificationCenter-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-ExceptionHandling==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/69/56/3e161cf570fb3f6bc23f0482d4a9471e610d2f5874bbfc4a0e5fdaa51b95/pyobjc_framework_ExceptionHandling-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-ExternalAccessory==4.2.2; platform_release >= "17.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/17/bf/322eb4fd5500f0a85bc8ea4355c6fa596c45f2bd30ba73352cbae017a839/pyobjc_framework_ExternalAccessory-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-LaunchServices==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ae/9c/fdae11aef4223a639c48ea1c78c25c2aa7036b33da9b109752e06aff1f18/pyobjc_framework_LaunchServices-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-ScreenSaver==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/dd/1c/6e5053cd32603ec0e9482bf932848b1cadd08fa122b57e23fc6ebe6dc8f2/pyobjc_framework_ScreenSaver-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-ImageCaptureCore==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/b5/c3/bbd2ba954f9ec3a5670076117b35d39c9e79183bfe3e278653e647cc05d6/pyobjc_framework_ImageCaptureCore-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-ServiceManagement==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/03/6f/479f4064b416f836b0d025dcca3eea35ecd93e97276f87ed19816ac02a81/pyobjc_framework_ServiceManagement-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-QTKit==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/50/fa/82f4f68688fbc72c2bf556ba05294b33b1ffa227f33f1f008d9fcf7538a4/pyobjc_framework_QTKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-AppleScriptKit==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/40/1e/c6673220f0ea7c4404fc82dfb4db835e492c61719abc040198fd5b6ee05a/pyobjc_framework_AppleScriptKit-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-CFNetwork==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/b0/ac/6946591ae41bdb7c98fe5925de17cc2e5a56b7ae234e309e34f8cb582804/pyobjc_framework_CFNetwork-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-AppleScriptObjC==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/36/4d/de99f72f0de9db9fd1b8a8ee5059af13ca027191b4f3f3f7d27ede9418fd/pyobjc_framework_AppleScriptObjC-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-SearchKit==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/48/a5/5b95f80c0d1bb6ede5136e889cbf7b1edd7281a854d9432d674786d97dd4/pyobjc_framework_SearchKit-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-SceneKit==4.2.2; platform_release >= "11.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/f2/ff/286ccf68a8b9590121f8c39a7cab25abf92a5a0591db003810c97623d9b0/pyobjc_framework_SceneKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-DictionaryServices==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ea/03/f4aaae7a5c0ac0bcb9a7457564d2508ab17ee290673196863a2262f656b2/pyobjc_framework_DictionaryServices-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-ContactsUI==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/f6/1b/41adb1d371ff679dc3fdf9d98bc363f35392e6459e0ac099a437fa81801c/pyobjc_framework_ContactsUI-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-CalendarStore==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/b8/d6/1e9017ffdeb5b1d6c05bb6729170da485b3d083ac291132e28c54a60aa60/pyobjc_framework_CalendarStore-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-SecurityFoundation==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/97/d4/5d757d864982e8cfd01619464f32ccdbf63afe4eaa24ff8ace814ec14c4b/pyobjc_framework_SecurityFoundation-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-NetworkExtension==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/06/10/ed43400a4e8e3ed165bbd538cb1426acb29b04800b3ee01f94de69bd4f2c/pyobjc_framework_NetworkExtension-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-FSEvents==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/96/c2/0e9939e4cecad7d52fbf23c8f8448c97ef243e537eec3e8b0aa6a6fc58ae/pyobjc_framework_FSEvents-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-LocalAuthentication==4.2.2; platform_release >= "14.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/7f/77/feec73e80e845216dbc9913d53a3321ed16e345904493035e05930689b55/pyobjc_framework_LocalAuthentication-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-CoreText==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/72/6a/b736840744601b414b693e1ff77f7e93000258307a3d21ea0806c06d517d/pyobjc_framework_CoreText-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-OpenDirectory==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/2b/9c/ffd9cbceb28fee853ee86817b1e6d94d9367a8578c92cbfb4a916b1bbc22/pyobjc_framework_OpenDirectory-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-IMServicePlugIn==4.2.2; platform_release >= "11.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/6d/9c/8b6614fcd0514724225f77bfe18e3ba14204f46ab09d9a8bf5dce1effdbf/pyobjc_framework_IMServicePlugIn-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-Contacts==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/4a/02/4bf9c4a874f8d428a76bd306ef30af5eed42721ef7c39b505d508d048e80/pyobjc_framework_Contacts-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-WebKit==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/0e/f2/cc7f7f7e86c5e451336bdf01d6cc7dda91d5546ebd9914bf2a627e563cd6/pyobjc_framework_WebKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-CoreServices==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/f1/13/9d95b1c65348c9146a291cee3e0e8aa297adc684079deba2f8ad293d1485/pyobjc_framework_CoreServices-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-GameCenter==4.2.2; platform_release >= "12.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/bc/1e/946d94d6b216139730a93d9f0cf33dbde50fece2dc8c06ffa00053e1d440/pyobjc_framework_GameCenter-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-ApplicationServices==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/a8/93/1035a3a1c2a9f5dae178b29d08a6af4c3a391e9a6a5bfc6fe5a4e3dcef06/pyobjc_framework_ApplicationServices-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-SecurityInterface==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/bf/31/a309ecf7ab73c50862beea2c0808cae9b6c00c8b46eed041d613efd17427/pyobjc_framework_SecurityInterface-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-Vision==4.2.2; platform_release >= "17.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/33/f1/61f990bd36d39bc4d5e57402df9703c67fd9cdaea424eed30e158a0aea63/pyobjc_framework_Vision-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-MultipeerConnectivity==4.2.2; platform_release >= "14.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/48/df/b1bd5e5159ca7fd83dc28691dead7fbb5f8d8c6eac0918fb5466d4e417ac/pyobjc_framework_MultipeerConnectivity-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-SystemConfiguration==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/7d/17/fdf1b50a9dda0488682bc49c1c7137faf06266b5aced257f3e37c0c14497/pyobjc_framework_SystemConfiguration-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-GameplayKit==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/b8/03/6007176dfe1d9b94e5c26ee9c4a1d6d6ba9964d69d03be74704e130c734a/pyobjc_framework_GameplayKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-PhotosUI==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/6a/e2/19f34b2fd6fd9a14d52fc757e6e30052d9af5a726f5a87a7dc8d0876a5c0/pyobjc_framework_PhotosUI-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-NetFS==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/0d/8e/35b93a9d96e7fb2ec926405ed0e5ba77b176f1d0c1e31725c50f38cc1117/pyobjc_framework_NetFS-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-Collaboration==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/7e/92/35c80156de8b12b9863b82e5c666787602b4ed397c0cc750fe657ea2f275/pyobjc_framework_Collaboration-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-CloudKit==4.2.2; platform_release >= "14.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/41/d4/3b7d25ac4fddf05627725268ef37003552c8d4a12d91e66af00f08e83076/pyobjc_framework_CloudKit-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-InputMethodKit==4.2.2; platform_release >= "9.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/29/e6/b4ac4fc436a08ed058894bd4d8deb0b60b59326253091b61cc87c3781797/pyobjc_framework_InputMethodKit-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-LatentSemanticMapping==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/b5/b5/5aa80fe45671038abeecafce3de5dbb8c50501185e5a829d5cbd8d730a21/pyobjc_framework_LatentSemanticMapping-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-iTunesLibrary==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/c8/6c/1361a029031a8be1b205ec68c68e0e949dcae99afcf07d9be90123d171e1/pyobjc_framework_iTunesLibrary-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-core==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/d5/3a/8c5593f7deaf1f09284e1f040d4fdbb52babb13c1020079b44aeec803b25/pyobjc_core-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-MediaLibrary==4.2.2; platform_release >= "13.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ac/8f/8aeb4bfed8c6ef46eab28cd34fefb8cdb750646b8e30d889ed3142807ebd/pyobjc_framework_MediaLibrary-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-Cocoa==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/2e/15/6d49ebe1fecb351d3241311c52d50e7221a98cf5f0121e50bf3e70f7e91e/pyobjc_framework_Cocoa-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-SafariServices==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/19/a4/1bbae4500070ce2375c1a3da3910f7817bbd249291f5bb551af23d07cb34/pyobjc_framework_SafariServices-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-BusinessChat==4.2.2; platform_release >= "17.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/7f/33/36a808f0132d8b5909fd09fa2d02a67ffb35050ec0a0d69a1bf0a80e83a6/pyobjc_framework_BusinessChat-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-PreferencePanes==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/40/ae/0f8813945074ab43db3eba5716530244719aba784485bcc4bba0197bc523/pyobjc_framework_PreferencePanes-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-ModelIO==4.2.2; platform_release >= "15.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/ef/15/fec3087cf6236a0c4658e9b7301d7a2f5bcf77267a968604bf4e0f6428fe/pyobjc_framework_ModelIO-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Collecting pyobjc-framework-GameController==4.2.2; platform_release >= "13.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/90/ec/3abdd35992f8104f5e2f46897c77eb3fb574b0a7364e6aab66f2737d6cb4/pyobjc_framework_GameController-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-IOSurface==4.2.2; platform_release >= "10.0" (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/58/85/71fefb25bae49288edd4a84e1960cb13139c30ec2087667a15940b46b880/pyobjc_framework_IOSurface-4.2.2-py2.py3-none-any.whl
+Collecting pyobjc-framework-Security==4.2.2 (from pyobjc)
+  Using cached https://files.pythonhosted.org/packages/1c/43/0ebb2873c8d036a4f300f689f226b2db2f4bf26eae52e73c0cc2ba81dcd3/pyobjc_framework_Security-4.2.2-cp27-cp27m-macosx_10_6_intel.whl
+Installing collected packages: pyobjc-core, pyobjc-framework-Cocoa, pyobjc-framework-CoreBluetooth, pyobjc-framework-ScriptingBridge, pyobjc-framework-Quartz, pyobjc-framework-AVFoundation, pyobjc-framework-CoreSpotlight, pyobjc-framework-CoreLocation, pyobjc-framework-SpriteKit, pyobjc-framework-Intents, pyobjc-framework-CoreWLAN, pyobjc-framework-DiskArbitration, pyobjc-framework-FinderSync, pyobjc-framework-CryptoTokenKit, pyobjc-framework-CoreData, pyobjc-framework-PubSub, pyobjc-framework-SyncServices, pyobjc-framework-libdispatch, pyobjc-framework-InstallerPlugins, pyobjc-framework-Accounts, pyobjc-framework-AVKit, pyobjc-framework-EventKit, pyobjc-framework-AddressBook, pyobjc-framework-GameKit, pyobjc-framework-Automator, pyobjc-framework-StoreKit, pyobjc-framework-MapKit, pyobjc-framework-Photos, pyobjc-framework-CoreML, pyobjc-framework-MediaPlayer, pyobjc-framework-MediaAccessibility, pyobjc-framework-Social, pyobjc-framework-InstantMessage, pyobjc-framework-ColorSync, pyobjc-framework-NotificationCenter, pyobjc-framework-ExceptionHandling, pyobjc-framework-ExternalAccessory, pyobjc-framework-LaunchServices, pyobjc-framework-ScreenSaver, pyobjc-framework-ImageCaptureCore, pyobjc-framework-ServiceManagement, pyobjc-framework-QTKit, pyobjc-framework-AppleScriptKit, pyobjc-framework-CFNetwork, pyobjc-framework-AppleScriptObjC, pyobjc-framework-SearchKit, pyobjc-framework-SceneKit, pyobjc-framework-DictionaryServices, pyobjc-framework-Contacts, pyobjc-framework-ContactsUI, pyobjc-framework-CalendarStore, pyobjc-framework-Security, pyobjc-framework-SecurityFoundation, pyobjc-framework-NetworkExtension, pyobjc-framework-FSEvents, pyobjc-framework-LocalAuthentication, pyobjc-framework-CoreText, pyobjc-framework-OpenDirectory, pyobjc-framework-IMServicePlugIn, pyobjc-framework-WebKit, pyobjc-framework-CoreServices, pyobjc-framework-GameCenter, pyobjc-framework-ApplicationServices, pyobjc-framework-SecurityInterface, pyobjc-framework-Vision, pyobjc-framework-MultipeerConnectivity, pyobjc-framework-SystemConfiguration, pyobjc-framework-GameplayKit, pyobjc-framework-PhotosUI, pyobjc-framework-NetFS, pyobjc-framework-Collaboration, pyobjc-framework-CloudKit, pyobjc-framework-InputMethodKit, pyobjc-framework-LatentSemanticMapping, pyobjc-framework-iTunesLibrary, pyobjc-framework-MediaLibrary, pyobjc-framework-SafariServices, pyobjc-framework-BusinessChat, pyobjc-framework-PreferencePanes, pyobjc-framework-ModelIO, pyobjc-framework-GameController, pyobjc-framework-IOSurface, pyobjc
+Successfully installed pyobjc-4.2.2 pyobjc-core-4.2.2 pyobjc-framework-AVFoundation-4.2.2 pyobjc-framework-AVKit-4.2.2 pyobjc-framework-Accounts-4.2.2 pyobjc-framework-AddressBook-4.2.2 pyobjc-framework-AppleScriptKit-4.2.2 pyobjc-framework-AppleScriptObjC-4.2.2 pyobjc-framework-ApplicationServices-4.2.2 pyobjc-framework-Automator-4.2.2 pyobjc-framework-BusinessChat-4.2.2 pyobjc-framework-CFNetwork-4.2.2 pyobjc-framework-CalendarStore-4.2.2 pyobjc-framework-CloudKit-4.2.2 pyobjc-framework-Cocoa-4.2.2 pyobjc-framework-Collaboration-4.2.2 pyobjc-framework-ColorSync-4.2.2 pyobjc-framework-Contacts-4.2.2 pyobjc-framework-ContactsUI-4.2.2 pyobjc-framework-CoreBluetooth-4.2.2 pyobjc-framework-CoreData-4.2.2 pyobjc-framework-CoreLocation-4.2.2 pyobjc-framework-CoreML-4.2.2 pyobjc-framework-CoreServices-4.2.2 pyobjc-framework-CoreSpotlight-4.2.2 pyobjc-framework-CoreText-4.2.2 pyobjc-framework-CoreWLAN-4.2.2 pyobjc-framework-CryptoTokenKit-4.2.2 pyobjc-framework-DictionaryServices-4.2.2 pyobjc-framework-DiskArbitration-4.2.2 pyobjc-framework-EventKit-4.2.2 pyobjc-framework-ExceptionHandling-4.2.2 pyobjc-framework-ExternalAccessory-4.2.2 pyobjc-framework-FSEvents-4.2.2 pyobjc-framework-FinderSync-4.2.2 pyobjc-framework-GameCenter-4.2.2 pyobjc-framework-GameController-4.2.2 pyobjc-framework-GameKit-4.2.2 pyobjc-framework-GameplayKit-4.2.2 pyobjc-framework-IMServicePlugIn-4.2.2 pyobjc-framework-IOSurface-4.2.2 pyobjc-framework-ImageCaptureCore-4.2.2 pyobjc-framework-InputMethodKit-4.2.2 pyobjc-framework-InstallerPlugins-4.2.2 pyobjc-framework-InstantMessage-4.2.2 pyobjc-framework-Intents-4.2.2 pyobjc-framework-LatentSemanticMapping-4.2.2 pyobjc-framework-LaunchServices-4.2.2 pyobjc-framework-LocalAuthentication-4.2.2 pyobjc-framework-MapKit-4.2.2 pyobjc-framework-MediaAccessibility-4.2.2 pyobjc-framework-MediaLibrary-4.2.2 pyobjc-framework-MediaPlayer-4.2.2 pyobjc-framework-ModelIO-4.2.2 pyobjc-framework-MultipeerConnectivity-4.2.2 pyobjc-framework-NetFS-4.2.2 pyobjc-framework-NetworkExtension-4.2.2 pyobjc-framework-NotificationCenter-4.2.2 pyobjc-framework-OpenDirectory-4.2.2 pyobjc-framework-Photos-4.2.2 pyobjc-framework-PhotosUI-4.2.2 pyobjc-framework-PreferencePanes-4.2.2 pyobjc-framework-PubSub-4.2.2 pyobjc-framework-QTKit-4.2.2 pyobjc-framework-Quartz-4.2.2 pyobjc-framework-SafariServices-4.2.2 pyobjc-framework-SceneKit-4.2.2 pyobjc-framework-ScreenSaver-4.2.2 pyobjc-framework-ScriptingBridge-4.2.2 pyobjc-framework-SearchKit-4.2.2 pyobjc-framework-Security-4.2.2 pyobjc-framework-SecurityFoundation-4.2.2 pyobjc-framework-SecurityInterface-4.2.2 pyobjc-framework-ServiceManagement-4.2.2 pyobjc-framework-Social-4.2.2 pyobjc-framework-SpriteKit-4.2.2 pyobjc-framework-StoreKit-4.2.2 pyobjc-framework-SyncServices-4.2.2 pyobjc-framework-SystemConfiguration-4.2.2 pyobjc-framework-Vision-4.2.2 pyobjc-framework-WebKit-4.2.2 pyobjc-framework-iTunesLibrary-4.2.2 pyobjc-framework-libdispatch-4.2.2
+You are using pip version 9.0.3, however version 18.0 is available.
+You should consider upgrading via the 'pip install --upgrade pip' command.
+
+##########
+Python.framework/Versions/2.7/lib/python2.7/site-packages/libffi.dylib
+otool -L _cffi_backend.so
+_cffi_backend.so:
+	/usr/lib/libffi.dylib (compatibility version 1.0.0, current version 1.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1238.51.1)
+
+This might be a problem in Recovery as there is no /usr/lib/libffi.dylib. If so, we'll need to explore some ways to get a copy into Python.framework/Versions/2.7/lib and fix the dependency.
+###########

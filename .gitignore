@@ -1,0 +1,8 @@
+# .DS_Store files!
+.DS_Store
+
+# don't track .pyc files
+*.pyc
+
+# don't track the framework itself if it gets built in this directory
+Python.framework/
