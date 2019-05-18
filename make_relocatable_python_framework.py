@@ -26,49 +26,60 @@ from locallibs.relocatablizer import relocatablize
 
 
 def main():
-    '''Main'''
+    """Main"""
     usage = "usage: %prog [options] [/path/to/framework/destination]"
     parser = optparse.OptionParser(usage=usage)
     parser.add_option(
-        '--destination', default=".",
-        help='Directory destination for the Python.framework')
+        "--destination",
+        default=".",
+        help="Directory destination for the Python.framework",
+    )
     parser.add_option(
-        '--baseurl', default=get.DEFAULT_BASEURL,
-        help='Override the base URL used to download the framework.')
+        "--baseurl",
+        default=get.DEFAULT_BASEURL,
+        help="Override the base URL used to download the framework.",
+    )
     parser.add_option(
-        '--os-version', default=get.DEFAULT_OS_VERSION,
-        help='Override the macOS version of the downloaded pkg. '
-             'Current supported versions are "10.6" and "10.9". '
-             'Not all Python version and macOS version combinations are valid.')
+        "--os-version",
+        default=get.DEFAULT_OS_VERSION,
+        help="Override the macOS version of the downloaded pkg. "
+        'Current supported versions are "10.6" and "10.9". '
+        "Not all Python version and macOS version combinations are valid.",
+    )
     parser.add_option(
-        '--python-version', default=get.DEFAULT_PYTHON_VERSION,
-        help='Override the version of the Python framework to be downloaded. '
-             'See available versions at '
-             'https://www.python.org/downloads/mac-osx/')
+        "--python-version",
+        default=get.DEFAULT_PYTHON_VERSION,
+        help="Override the version of the Python framework to be downloaded. "
+        "See available versions at "
+        "https://www.python.org/downloads/mac-osx/",
+    )
     parser.add_option(
-        '--pip-requirements', default=None,
-        help='Path to a pip freeze requirements.txt file that describes extra '
-             'Python modules to be installed. If not provided, certain useful '
-             'modules for macOS will be installed.')
+        "--pip-requirements",
+        default=None,
+        help="Path to a pip freeze requirements.txt file that describes extra "
+        "Python modules to be installed. If not provided, certain useful "
+        "modules for macOS will be installed.",
+    )
     options, _arguments = parser.parse_args()
 
     framework_path = get.FrameworkGetter(
         python_version=options.python_version,
         os_version=options.os_version,
-        base_url=options.baseurl
+        base_url=options.baseurl,
     ).download_and_extract(destination=options.destination)
 
     if framework_path:
         relocatablize(framework_path)
         short_version = ".".join(options.python_version.split(".")[0:2])
         install_extras(
-            framework_path, version=short_version,
-            requirements_file=options.pip_requirements
+            framework_path,
+            version=short_version,
+            requirements_file=options.pip_requirements,
         )
         print()
         print("Done!")
         print("Customized, relocatable framework is at %s" % framework_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -21,22 +21,16 @@ import os
 import subprocess
 import sys
 
+PYTHON2_EXTRA_PKGS = ["xattr==0.6.4", "pyobjc"]
 
-PYTHON2_EXTRA_PKGS = [
-    "xattr==0.6.4",
-    "pyobjc",
-]
-
-PYTHON3_EXTRA_PKGS = [
-    "xattr",
-    "pyobjc",
-]
+PYTHON3_EXTRA_PKGS = ["xattr", "pyobjc"]
 
 
 def ensure_pip(framework_path, version):
-    '''Ensure pip is installed in our Python framework'''
+    """Ensure pip is installed in our Python framework"""
     python_path = os.path.join(
-        framework_path, "Versions", version, "bin/python" + version)
+        framework_path, "Versions", version, "bin/python" + version
+    )
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
@@ -46,9 +40,10 @@ def ensure_pip(framework_path, version):
 
 
 def install(pkgname, framework_path, version):
-    '''Use pip to install a Python pkg into framework_path'''
+    """Use pip to install a Python pkg into framework_path"""
     python_path = os.path.join(
-        framework_path, "Versions", version, "bin/python" + version)
+        framework_path, "Versions", version, "bin/python" + version
+    )
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
@@ -58,9 +53,10 @@ def install(pkgname, framework_path, version):
 
 
 def install_requirements(requirements_file, framework_path, version):
-    '''Use pip to install a Python pkg into framework_path'''
+    """Use pip to install a Python pkg into framework_path"""
     python_path = os.path.join(
-        framework_path, "Versions", version, "bin/python" + version)
+        framework_path, "Versions", version, "bin/python" + version
+    )
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
@@ -70,7 +66,7 @@ def install_requirements(requirements_file, framework_path, version):
 
 
 def install_extras(framework_path, version="2.7", requirements_file=None):
-    '''install all extra pkgs into Python framework path'''
+    """install all extra pkgs into Python framework path"""
     print()
     ensure_pip(framework_path, version)
     if requirements_file:

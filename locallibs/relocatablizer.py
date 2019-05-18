@@ -21,7 +21,6 @@ import os
 import subprocess
 import sys
 
-
 CHMOD = "/bin/chmod"
 OTOOL = "/usr/bin/otool"
 INSTALL_NAME_TOOL = "/usr/bin/install_name_tool"
@@ -29,21 +28,21 @@ FILETOOL = "/usr/bin/file"
 
 
 def run(cmd):
-    '''Prints and executes cmd'''
+    """Prints and executes cmd"""
     print(" ".join(cmd))
     subprocess.check_call(cmd)
 
 
 def fix_modes(framework_dir):
-    '''Make sure all files are set so owner can read/write and everyone else
-       can only read'''
+    """Make sure all files are set so owner can read/write and everyone else
+       can only read"""
     cmd = [CHMOD, "-R", "u+rw,g+r,g-w,o+r,o-w", framework_dir]
     print("Ensuring correct modes for files in %s..." % framework_dir)
     subprocess.check_call(cmd)
 
 
 def framework_parent_dir(some_file):
-    '''Return parent path to framework dir'''
+    """Return parent path to framework dir"""
     temp_path = some_file
     while len(temp_path) > 1:
         if temp_path.endswith(".framework"):
@@ -53,7 +52,7 @@ def framework_parent_dir(some_file):
 
 
 def framework_name(some_file):
-    '''Return framework name'''
+    """Return framework name"""
     temp_path = some_file
     while len(temp_path) > 1:
         if temp_path.endswith(".framework"):
@@ -63,18 +62,19 @@ def framework_name(some_file):
 
 
 def framework_lib_name(some_file):
-    '''Return framework lib name'''
+    """Return framework lib name"""
     return os.path.splitext(framework_name(some_file))[0]
 
 
 def relativize_install_name(some_file):
-    '''Replaces original install name with an rpath; returns new
-    install_name'''
+    """Replaces original install name with an rpath; returns new
+    install_name"""
     original_install_name = get_install_name(some_file)
     if original_install_name and not original_install_name.startswith("@"):
         framework_loc = framework_parent_dir(some_file)
         new_install_name = os.path.join(
-            "@rpath", os.path.relpath(some_file, framework_loc))
+            "@rpath", os.path.relpath(some_file, framework_loc)
+        )
         cmd = [INSTALL_NAME_TOOL, "-id", new_install_name, some_file]
         run(cmd)
         return new_install_name
@@ -82,14 +82,19 @@ def relativize_install_name(some_file):
 
 
 def fix_dep(some_file, old_install_name, new_install_name):
-    '''Updates old_install_name to new_install_name inside some file'''
-    cmd = [INSTALL_NAME_TOOL,
-           "-change", old_install_name, new_install_name, some_file]
+    """Updates old_install_name to new_install_name inside some file"""
+    cmd = [
+        INSTALL_NAME_TOOL,
+        "-change",
+        old_install_name,
+        new_install_name,
+        some_file,
+    ]
     run(cmd)
 
 
 def get_rpaths(some_file):
-    '''returns rpaths stored in an executable'''
+    """returns rpaths stored in an executable"""
     cmd = [OTOOL, "-l", some_file]
     output_lines = subprocess.check_output(cmd).decode("utf-8").splitlines()
     rpaths = []
@@ -107,19 +112,22 @@ def get_rpaths(some_file):
 
 
 def add_rpath(some_file):
-    '''adds an rpath to the file'''
+    """adds an rpath to the file"""
     framework_loc = framework_parent_dir(some_file)
-    rpath = os.path.join(
-        "@executable_path",
-        os.path.relpath(framework_loc,
-                        os.path.dirname(some_file))) + "/"
+    rpath = (
+        os.path.join(
+            "@executable_path",
+            os.path.relpath(framework_loc, os.path.dirname(some_file)),
+        )
+        + "/"
+    )
     if rpath not in get_rpaths(some_file):
         cmd = [INSTALL_NAME_TOOL, "-add_rpath", rpath, some_file]
         run(cmd)
 
 
 def get_deps(some_file):
-    '''Return a list of dependencies for some_file'''
+    """Return a list of dependencies for some_file"""
     cmd = [OTOOL, "-L", some_file]
     output_lines = subprocess.check_output(cmd).decode("utf-8").splitlines()
     deps = []
@@ -134,7 +142,7 @@ def get_deps(some_file):
 
 
 def get_install_name(some_file):
-    '''Returns the install_name of a shared library'''
+    """Returns the install_name of a shared library"""
     cmd = [OTOOL, "-D", some_file]
     output_lines = subprocess.check_output(cmd).decode("utf-8").splitlines()
     if len(output_lines) > 1:
@@ -143,7 +151,7 @@ def get_install_name(some_file):
 
 
 def make_info(some_file):
-    '''Return a dict containing info about the file'''
+    """Return a dict containing info about the file"""
     info = {}
     info["path"] = some_file
     install_name = get_install_name(some_file)
@@ -156,21 +164,30 @@ def make_info(some_file):
 
 
 def deps_contain_prefix(info_item, prefix):
-    '''Do the deps or install_name contain the prefix?'''
-    matching_dep_items = len(
-        [dep_item for dep_item in info_item.get("dependencies", [])
-         if dep_item.startswith(prefix)]) > 0
+    """Do the deps or install_name contain the prefix?"""
+    matching_dep_items = (
+        len(
+            [
+                dep_item
+                for dep_item in info_item.get("dependencies", [])
+                if dep_item.startswith(prefix)
+            ]
+        )
+        > 0
+    )
     matching_install_name = info_item.get("install_name", "").startswith(prefix)
     return matching_dep_items or matching_install_name
 
 
 def base_install_name(full_framework_path):
-    '''Generates a base install name for the framework'''
+    """Generates a base install name for the framework"""
     versions_dir = os.path.join(full_framework_path, "Versions")
-    versions = [os.path.join(versions_dir, item)
-                for item in os.listdir(versions_dir)
-                if os.path.isdir(os.path.join(versions_dir, item))
-                and not os.path.islink(os.path.join(versions_dir, item))]
+    versions = [
+        os.path.join(versions_dir, item)
+        for item in os.listdir(versions_dir)
+        if os.path.isdir(os.path.join(versions_dir, item))
+        and not os.path.islink(os.path.join(versions_dir, item))
+    ]
     for version_dir in versions:
         dylib_name = os.path.join(version_dir, "Python")
         if os.path.exists(dylib_name):
@@ -225,10 +242,11 @@ def analyze(some_dir):
 
 
 def relocatablize(framework_path):
-    '''Changes install names and rpaths inside a (Python) framework to make
-    it relocatable. Might work with non-Python frameworks...'''
+    """Changes install names and rpaths inside a (Python) framework to make
+    it relocatable. Might work with non-Python frameworks..."""
     full_framework_path = os.path.abspath(
-        os.path.normpath(os.path.expanduser(framework_path)))
+        os.path.normpath(os.path.expanduser(framework_path))
+    )
     fix_modes(full_framework_path)
     framework_data = analyze(full_framework_path)
     for dylib in framework_data["dylibs"]:
@@ -236,8 +254,11 @@ def relocatablize(framework_path):
         new_install_name = relativize_install_name(dylib["path"])
         # update other files with new install_name
         if old_install_name != new_install_name:
-            files = (framework_data["executables"] + framework_data["dylibs"] +
-                     framework_data["so_files"])
+            files = (
+                framework_data["executables"]
+                + framework_data["dylibs"]
+                + framework_data["so_files"]
+            )
             for item in files:
                 if old_install_name in item["dependencies"]:
                     fix_dep(item["path"], old_install_name, new_install_name)
