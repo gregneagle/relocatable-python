@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Functions to make the Python framework relocatable"""
 
 from __future__ import print_function
 
@@ -27,7 +28,7 @@ INSTALL_NAME_TOOL = "/usr/bin/install_name_tool"
 FILETOOL = "/usr/bin/file"
 
 
-def do(cmd):
+def run(cmd):
     '''Prints and executes cmd'''
     print(" ".join(cmd))
     subprocess.check_call(cmd)
@@ -75,7 +76,7 @@ def relativize_install_name(some_file):
         new_install_name = os.path.join(
             "@rpath", os.path.relpath(some_file, framework_loc))
         cmd = [INSTALL_NAME_TOOL, "-id", new_install_name, some_file]
-        do(cmd)
+        run(cmd)
         return new_install_name
     return original_install_name
 
@@ -84,7 +85,7 @@ def fix_dep(some_file, old_install_name, new_install_name):
     '''Updates old_install_name to new_install_name inside some file'''
     cmd = [INSTALL_NAME_TOOL,
            "-change", old_install_name, new_install_name, some_file]
-    do(cmd)
+    run(cmd)
 
 
 def get_rpaths(some_file):
@@ -109,12 +110,12 @@ def add_rpath(some_file):
     '''adds an rpath to the file'''
     framework_loc = framework_parent_dir(some_file)
     rpath = os.path.join(
-        "@executable_path", 
-        os.path.relpath(framework_loc, 
+        "@executable_path",
+        os.path.relpath(framework_loc,
                         os.path.dirname(some_file))) + "/"
     if rpath not in get_rpaths(some_file):
         cmd = [INSTALL_NAME_TOOL, "-add_rpath", rpath, some_file]
-        do(cmd)
+        run(cmd)
 
 
 def get_deps(some_file):
@@ -156,14 +157,15 @@ def make_info(some_file):
 
 def deps_contain_prefix(info_item, prefix):
     '''Do the deps or install_name contain the prefix?'''
-    matching_dep_items = len([dep_item 
-                              for dep_item in info_item.get("dependencies", [])
-                              if dep_item.startswith(prefix)]) > 0
+    matching_dep_items = len(
+        [dep_item for dep_item in info_item.get("dependencies", [])
+         if dep_item.startswith(prefix)]) > 0
     matching_install_name = info_item.get("install_name", "").startswith(prefix)
     return matching_dep_items or matching_install_name
 
 
 def base_install_name(full_framework_path):
+    '''Generates a base install name for the framework'''
     versions_dir = os.path.join(full_framework_path, "Versions")
     versions = [os.path.join(versions_dir, item)
                 for item in os.listdir(versions_dir)
@@ -189,34 +191,35 @@ def analyze(some_dir):
     data["dylibs"] = []
     data["so_files"] = []
     count = 0
-    for dirpath, dirs, files in os.walk(some_dir):
+    for dirpath, _dirs, files in os.walk(some_dir):
         for some_file in files:
             count += 1
             if count % 100 == 0:
                 sys.stdout.write(".")
                 sys.stdout.flush()
             filepath = os.path.join(dirpath, some_file)
-            if not os.path.islink(filepath):
-                name, ext = os.path.splitext(filepath)
-                if ext == ".so":
+            if os.path.islink(filepath):
+                continue
+            ext = os.path.splitext(filepath)[1]
+            if ext == ".so":
+                info = make_info(filepath)
+                if deps_contain_prefix(info, prefix):
+                    data["so_files"].append(info)
+            elif ext == ".dylib":
+                info = make_info(filepath)
+                if deps_contain_prefix(info, prefix):
+                    data["dylibs"].append(info)
+            else:
+                cmd = [FILETOOL, "-b", filepath]
+                output = subprocess.check_output(cmd).decode("utf-8")
+                if "Mach-O 64-bit executable" in output:
                     info = make_info(filepath)
                     if deps_contain_prefix(info, prefix):
-                        data["so_files"].append(info)
-                elif ext == ".dylib":
+                        data["executables"].append(info)
+                if "Mach-O 64-bit dynamically linked shared library" in output:
                     info = make_info(filepath)
                     if deps_contain_prefix(info, prefix):
                         data["dylibs"].append(info)
-                else:
-                    cmd = [FILETOOL, "-b", filepath]
-                    output = subprocess.check_output(cmd).decode("utf-8")
-                    if "Mach-O 64-bit executable" in output:
-                        info = make_info(filepath)
-                        if deps_contain_prefix(info, prefix):
-                            data["executables"].append(info)
-                    if "Mach-O 64-bit dynamically linked shared library" in output:
-                        info = make_info(filepath)
-                        if deps_contain_prefix(info, prefix):
-                            data["dylibs"].append(info)
     sys.stdout.write("\n")
     return data
 

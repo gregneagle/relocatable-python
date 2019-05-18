@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Functions to pip install extra modules in our framework"""
 
 from __future__ import print_function
 
@@ -32,39 +33,53 @@ PYTHON3_EXTRA_PKGS = [
 ]
 
 
-def ensure_pip(framework_path, version="2.7"):
+def ensure_pip(framework_path, version):
     '''Ensure pip is installed in our Python framework'''
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version)
     if not os.path.exists(python_path):
-        print >> sys.stderr, "No python at %s" % python_path
+        print("No python at %s" % python_path, file=sys.stderr)
         return
     cmd = [python_path, "-m", "ensurepip"]
     print("Ensuring pip is installed...")
     subprocess.check_call(cmd)
 
 
-def install(pkgname, framework_path, version="2.7"):
+def install(pkgname, framework_path, version):
     '''Use pip to install a Python pkg into framework_path'''
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version)
     if not os.path.exists(python_path):
-        print >> sys.stderr, "No python at %s" % python_path
+        print("No python at %s" % python_path, file=sys.stderr)
         return
     cmd = [python_path, "-m", "pip", "install", pkgname]
     print("Installing %s..." % pkgname)
     subprocess.check_call(cmd)
 
 
-def install_extras(framework_path, version="2.7"):
+def install_requirements(requirements_file, framework_path, version):
+    '''Use pip to install a Python pkg into framework_path'''
+    python_path = os.path.join(
+        framework_path, "Versions", version, "bin/python" + version)
+    if not os.path.exists(python_path):
+        print("No python at %s" % python_path, file=sys.stderr)
+        return
+    cmd = [python_path, "-m", "pip", "install", "-r", requirements_file]
+    print("Installing modules from %s..." % requirements_file)
+    subprocess.check_call(cmd)
+
+
+def install_extras(framework_path, version="2.7", requirements_file=None):
     '''install all extra pkgs into Python framework path'''
     print()
-    ensure_pip(framework_path, version=version)
-    if version.startswith("2."):
+    ensure_pip(framework_path, version)
+    if requirements_file:
+        install_requirements(requirements_file, framework_path, version)
+    elif version.startswith("2."):
         for pkgname in PYTHON2_EXTRA_PKGS:
             print()
-            install(pkgname, framework_path, version=version)
-    if version.startswith("3."):
+            install(pkgname, framework_path, version)
+    elif version.startswith("3."):
         for pkgname in PYTHON3_EXTRA_PKGS:
             print()
-            install(pkgname, framework_path, version=version)
+            install(pkgname, framework_path, version)

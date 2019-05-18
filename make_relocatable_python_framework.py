@@ -14,10 +14,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tool to build relocatable Python frameworks on macOS"""
 
 from __future__ import print_function
 
-import os
 import optparse
 
 from locallibs import get
@@ -45,7 +45,12 @@ def main():
         help='Override the version of the Python framework to be downloaded. '
              'See available versions at '
              'https://www.python.org/downloads/mac-osx/')
-    options, arguments = parser.parse_args()
+    parser.add_option(
+        '--pip-requirements', default=None,
+        help='Path to a pip freeze requirements.txt file that describes extra '
+             'Python modules to be installed. If not provided, certain useful '
+             'modules for macOS will be installed.')
+    options, _arguments = parser.parse_args()
 
     framework_path = get.FrameworkGetter(
         python_version=options.python_version,
@@ -56,8 +61,10 @@ def main():
     if framework_path:
         relocatablize(framework_path)
         short_version = ".".join(options.python_version.split(".")[0:2])
-        install_extras(framework_path, version=short_version)
-
+        install_extras(
+            framework_path, version=short_version,
+            requirements_file=options.pip_requirements
+        )
         print()
         print("Done!")
         print("Customized, relocatable framework is at %s" % framework_path)

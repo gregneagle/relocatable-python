@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Object to download the Python.org framework pkg and extract it"""
 
 from __future__ import print_function
 
@@ -31,10 +32,11 @@ DEFAULT_PYTHON_VERSION = "2.7.15"
 DEFAULT_OS_VERSION = "10.9"
 
 class FrameworkGetter(object):
-    
+    """Handles getting the Python.org pkg and extracting the framework"""
+
     downloaded_pkg_path = ""
     expanded_path = ""
-    
+
     def __init__(self,
                  python_version=DEFAULT_PYTHON_VERSION,
                  os_version=DEFAULT_OS_VERSION,
@@ -42,7 +44,8 @@ class FrameworkGetter(object):
         self.python_version = python_version
         self.os_version = os_version
         self.base_url = base_url
-    
+        self.destination = ""
+
     def __del__(self):
         '''Clean up'''
         if self.expanded_path:
@@ -57,7 +60,7 @@ class FrameworkGetter(object):
             self.python_version, self.python_version, self.os_version)
         (file_handle, destination_path) = tempfile.mkstemp()
         os.close(file_handle)
-        cmd = [CURL, "-o", destination_path , url]
+        cmd = [CURL, "-o", destination_path, url]
         print("Downloading %s..." % url)
         subprocess.check_call(cmd)
         self.downloaded_pkg_path = destination_path
@@ -90,7 +93,11 @@ class FrameworkGetter(object):
                   file=sys.stderr)
             return None
         self.destination = destination
-        self.download()
-        self.expand()
-        self.extract_framework()
-        return destination
+        try:
+            self.download()
+            self.expand()
+            self.extract_framework()
+            return destination
+        except subprocess.CalledProcessError as err:
+            print("%s" % err, file=sys.stderr)
+            return None
