@@ -41,14 +41,14 @@ def fix_modes(framework_dir):
     subprocess.check_call(cmd)
 
 
-def framework_parent_dir(some_file):
+def framework_dir(some_file):
     """Return parent path to framework dir"""
     temp_path = some_file
     while len(temp_path) > 1:
         if temp_path.endswith(".framework"):
-            return os.path.dirname(temp_path)
+            return temp_path
         temp_path = os.path.dirname(temp_path)
-    return temp_path
+    return ""
 
 
 def framework_name(some_file):
@@ -71,7 +71,7 @@ def relativize_install_name(some_file):
     install_name"""
     original_install_name = get_install_name(some_file)
     if original_install_name and not original_install_name.startswith("@"):
-        framework_loc = framework_parent_dir(some_file)
+        framework_loc = framework_dir(some_file)
         new_install_name = os.path.join(
             "@rpath", os.path.relpath(some_file, framework_loc)
         )
@@ -113,7 +113,7 @@ def get_rpaths(some_file):
 
 def add_rpath(some_file):
     """adds an rpath to the file"""
-    framework_loc = framework_parent_dir(some_file)
+    framework_loc = framework_dir(some_file)
     rpath = (
         os.path.join(
             "@executable_path",
@@ -193,9 +193,7 @@ def base_install_name(full_framework_path):
         if os.path.exists(dylib_name):
             install_name = get_install_name(dylib_name)
             if not install_name.startswith("@"):
-                parent_dir = framework_parent_dir(install_name)
-                name = framework_name(install_name)
-                return os.path.join(parent_dir, name)
+                return framework_dir(install_name)
     return ""
 
 
