@@ -21,6 +21,7 @@ from __future__ import print_function
 import optparse
 
 from locallibs import get
+from locallibs.fix import fix_other_things
 from locallibs.install import install_extras
 from locallibs.relocatablizer import relocatablize
 
@@ -76,9 +77,10 @@ def main():
             version=short_version,
             requirements_file=options.pip_requirements,
         )
-        print()
-        print("Done!")
-        print("Customized, relocatable framework is at %s" % framework_path)
+        if fix_other_things(framework_path, short_version):
+            print()
+            print("Done!")
+            print("Customized, relocatable framework is at %s" % framework_path)
 
 
 if __name__ == "__main__":
