@@ -40,15 +40,43 @@ def ensure_current_version_link(framework_path, short_version):
     return True
 
 
+def relativize_interpreter_path(framework_path, script_dir, shebang_line):
+    '''Takes a shebang line and generates a relative path to the interpreter
+    from the script dir. This is complicated by the fact the shebang line
+    might start with the current framework_path _or_
+    the default framework path'''
+    original_path = shebang_line[2:]
+    current_framework_path = os.path.abspath(framework_path).encode("UTF-8")
+    default_framework_path = b"/Library/Frameworks/Python.framework"
+    # normalize the original path so it refers to the current framework path
+    if original_path.startswith(default_framework_path):
+        original_path = original_path.replace(
+            default_framework_path, current_framework_path, 1)
+    return os.path.relpath(original_path, os.path.abspath(script_dir))
+
+
+def is_framework_shebang(framework_path, text):
+    '''Returns a boolean to indicate if the text starts with a shebang
+    referencing the framework_path or the default
+    /Library/Frameworks/Python.framework path'''
+    this_framework_shebang = (
+        b"#!" + os.path.abspath(framework_path).encode("UTF-8"))
+    default_framework_shebang = b"#!/Library/Frameworks/Python.framework"
+    if text.startswith(this_framework_shebang):
+        return True
+    if text.startswith(default_framework_shebang):
+        return True
+    return False
+
+
 def fix_script_shebangs(framework_path, short_version):
     '''Attempt to make the scripts in the bin directory relocatable'''
 
     relocatable_shebang = b"""#!/bin/sh
 '''exec' "$(dirname "$0")/%s" "$0" "$@"
 ' '''
-# the above calls the %s interpreter in the same directory as this script
+# the above calls the %s interpreter relative to the directory of this script
 """
-
     bin_dir = os.path.join(framework_path, "Versions", short_version, "bin")
     for filename in os.listdir(bin_dir):
         try:
@@ -58,15 +86,20 @@ def fix_script_shebangs(framework_path, short_version):
                 # skip symlinks and directories
                 continue
             with open(original_filepath, 'rb') as original_file:
-                head = original_file.readline().strip()
-                interpreter = os.path.split(head)[-1]
-                if head.startswith(b"#!/") and b"python" in interpreter:
-                    # we found a Python script!
+                first_line = original_file.readline().strip()
+                if is_framework_shebang(framework_path, first_line):
+                    # we found a script that references an interpreter inside
+                    # the framework
                     print("Modifying shebang for %s..." % original_filepath)
+                    relative_interpreter_path = relativize_interpreter_path(
+                        framework_path, bin_dir, first_line)
                     new_filepath = original_filepath + ".temp"
                     with open(new_filepath, 'wb') as new_file:
                         new_file.write(
-                            relocatable_shebang % (interpreter, interpreter))
+                            relocatable_shebang
+                            % (relative_interpreter_path,
+                               relative_interpreter_path)
+                        )
                         for line in original_file.readlines():
                             new_file.write(line)
                     # replace original with modified
