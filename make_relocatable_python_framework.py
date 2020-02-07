@@ -28,7 +28,7 @@ from locallibs.relocatablizer import relocatablize
 
 def main():
     """Main"""
-    usage = "usage: %prog [options] [/path/to/framework/destination]"
+    usage = "usage: %prog [options]"
     parser = optparse.OptionParser(usage=usage)
     parser.add_option(
         "--destination",
