@@ -52,7 +52,8 @@ def relativize_interpreter_path(framework_path, script_dir, shebang_line):
     if original_path.startswith(default_framework_path):
         original_path = original_path.replace(
             default_framework_path, current_framework_path, 1)
-    return os.path.relpath(original_path, os.path.abspath(script_dir))
+    return os.path.relpath(
+        original_path, os.path.abspath(script_dir).encode("UTF-8"))
 
 
 def is_framework_shebang(framework_path, text):
