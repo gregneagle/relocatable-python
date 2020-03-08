@@ -10,17 +10,20 @@ Currently tested versions:
     Python version 2.7.15 with macOS deployment target 10.9+
     Python version 3.7.4 with macOS deployment target 10.9+
 
-Requires at least the command-line developer tools; might require a full Xcode install.
+Requirements:
+    An existing Python environment (to run the tool)
+    Command-line developer tools
+    Possibly a full Xcode install
 
 Basic use -- make a Python.framework in the current working directory:
-./make_relocatable_python_framework
+    python make_relocatable_python_framework.py
 
 Specifying a target destination for the framework:
-./make_relocatable_python_framework --destination ~/Desktop
+    python make_relocatable_python_framework.py --destination ~/Desktop
 
 Specifying a different Python version:
-./make_relocatable_python_framework --python-version 3.7.4
+    python make_relocatable_python_framework.py --python-version 3.7.4
 
 More options:
-./make_relocatable_python_framework --help
+    python make_relocatable_python_framework.py --help
 
