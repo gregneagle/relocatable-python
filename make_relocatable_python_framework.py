@@ -62,13 +62,6 @@ def main():
         "modules for macOS will be installed.",
     )
     parser.add_option(
-        "--unsign",
-        dest="unsign",
-        action="store_true",
-        help="Unsign binaries and libraries after they are relocatablized, "
-        "in order to avoid having invalid signatures.",
-    )
-    parser.add_option(
         "--no-unsign",
         dest="unsign",
         action="store_false",
