@@ -19,7 +19,12 @@ from __future__ import print_function
 
 import os
 import shutil
+import subprocess
 import sys
+
+
+UNSIGN_TOOL = "/usr/bin/codesign"
+
 
 def ensure_current_version_link(framework_path, short_version):
     '''Make sure the framework has Versions/Current'''
@@ -119,3 +124,17 @@ def fix_other_things(framework_path, short_version):
     future'''
     return (ensure_current_version_link(framework_path, short_version) and
             fix_script_shebangs(framework_path, short_version))
+
+
+def fix_broken_signatures(files_relocatablized):
+    """
+    Unsign the binaries and libraries that were relocatablized to avoid
+    them having corrupted signatures.
+    """
+    for file in files_relocatablized:
+        print("Unsigning %s to avoid broken signature." % file)
+        subprocess.check_call([
+            UNSIGN_TOOL,
+            "--remove-signature",
+            file,
+        ])

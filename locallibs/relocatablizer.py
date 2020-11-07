@@ -247,9 +247,11 @@ def relocatablize(framework_path):
     )
     fix_modes(full_framework_path)
     framework_data = analyze(full_framework_path)
+    files_changed = set()
     for dylib in framework_data["dylibs"]:
         old_install_name = dylib["install_name"]
         new_install_name = relativize_install_name(dylib["path"])
+        files_changed.add(dylib["path"])
         # update other files with new install_name
         if old_install_name != new_install_name:
             files = (
@@ -260,7 +262,11 @@ def relocatablize(framework_path):
             for item in files:
                 if old_install_name in item["dependencies"]:
                     fix_dep(item["path"], old_install_name, new_install_name)
+                    files_changed.add(item["path"])
         print()
     # add rpaths to executables
     for item in framework_data["executables"]:
         add_rpath(item["path"])
+        files_changed.add(item["path"])
+
+    return files_changed
