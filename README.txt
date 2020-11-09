@@ -24,3 +24,5 @@ Specifying a different Python version:
 More options:
 ./make_relocatable_python_framework --help
 
+NOTE: as of this commit https://github.com/gregneagle/relocatable-python/commit/f4c4110f36ac1cb60b8253c2e04eaf34804f7303, any signed binaries or libraries within the framework will have their signatures removed. The "relocatablizing" process modifies these files, making any signature invalid. Rather than leave an invalid signature, which might seem like potential malware (and which currently causes at least one well-known security tool to _crash_), it's better to remove the invalid signature all together.
+
