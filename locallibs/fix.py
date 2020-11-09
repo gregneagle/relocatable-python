@@ -131,10 +131,7 @@ def fix_broken_signatures(files_relocatablized):
     Unsign the binaries and libraries that were relocatablized to avoid
     them having corrupted signatures.
     """
-    for file in files_relocatablized:
-        print("Unsigning %s to avoid broken signature." % file)
-        subprocess.check_call([
-            UNSIGN_TOOL,
-            "--remove-signature",
-            file,
-        ])
+    for pathname in files_relocatablized:
+        print("Removing signature from %s because it is no longer valid."
+              % pathname)
+        subprocess.check_call([UNSIGN_TOOL, "--remove-signature", pathname])
