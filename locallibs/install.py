@@ -23,7 +23,7 @@ import sys
 
 PYTHON2_EXTRA_PKGS = ["xattr==0.6.4", "pyobjc"]
 
-PYTHON3_EXTRA_PKGS = ["xattr", "pyobjc"]
+PYTHON3_EXTRA_PKGS = ["cffi", "xattr", "pyobjc", "six"]
 
 
 def ensure_pip(framework_path, version):
