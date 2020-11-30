@@ -60,6 +60,11 @@ def install_requirements(requirements_file, framework_path, version):
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
+    if version.startswith("3.9"):
+        # nasty hack to get xattr to install under 3.9.1rc1
+        with open(requirements_file) as rfile:
+            if "xattr" in rfile.read():
+                install("cffi", framework_path, version)
     cmd = [python_path, "-s", "-m", "pip", "install", "-r", requirements_file]
     print("Installing modules from %s..." % requirements_file)
     subprocess.check_call(cmd)
@@ -70,11 +75,6 @@ def install_extras(framework_path, version="2.7", requirements_file=None):
     print()
     ensure_pip(framework_path, version)
     if requirements_file:
-        if version.startswith("3.9."):
-            # nasty hack to get xattr to install under 3.9.1rc1
-            with open(requirements_file) as rfile:
-                if "xattr" in rfile.read():
-                    install("cffi", framework_path, version)
         install_requirements(requirements_file, framework_path, version)
     elif version.startswith("2."):
         for pkgname in PYTHON2_EXTRA_PKGS:
