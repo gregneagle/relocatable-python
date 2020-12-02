@@ -95,9 +95,9 @@ def main():
         short_version = ".".join(options.python_version.split(".")[0:2])
         install_extras(
             framework_path,
-            version=short_version,
             install_wheel=options.install_wheel,
             upgrade_pip=options.upgrade_pip,
+            version=short_version,
             requirements_file=options.pip_requirements,
         )
         if fix_other_things(framework_path, short_version):
