@@ -26,7 +26,7 @@ PYTHON2_EXTRA_PKGS = ["xattr==0.6.4", "pyobjc"]
 PYTHON3_EXTRA_PKGS = ["cffi", "xattr", "pyobjc", "six"]
 
 
-def ensure_pip(framework_path, version):
+def ensure_pip(framework_path, upgrade_pip, version):
     """Ensure pip is installed in our Python framework"""
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version
@@ -35,6 +35,8 @@ def ensure_pip(framework_path, version):
         print("No python at %s" % python_path, file=sys.stderr)
         return
     cmd = [python_path, "-s", "-m", "ensurepip"]
+    if upgrade_pip:
+        cmd.append("--upgrade")
     print("Ensuring pip is installed...")
     subprocess.check_call(cmd)
 
@@ -49,19 +51,6 @@ def install(pkgname, framework_path, version):
         return
     cmd = [python_path, "-s", "-m", "pip", "install", pkgname]
     print("Installing %s..." % pkgname)
-    subprocess.check_call(cmd)
-
-
-def upgrade_pip_install(framework_path, version):
-    """Use pip to upgrade pip"""
-    python_path = os.path.join(
-        framework_path, "Versions", version, "bin/python" + version
-    )
-    if not os.path.exists(python_path):
-        print("No python at %s" % python_path, file=sys.stderr)
-        return
-    cmd = [python_path, "-s", "-m", "pip", "install", "--upgrade", "pip"]
-    print("Upgrading pip installation...")
     subprocess.check_call(cmd)
 
 
@@ -87,9 +76,7 @@ def install_extras(framework_path, version="2.7", requirements_file=None,
                    install_wheel=False, upgrade_pip=False):
     """install all extra pkgs into Python framework path"""
     print()
-    ensure_pip(framework_path, version)
-    if upgrade_pip:
-        upgrade_pip_install(framework_path, version)
+    ensure_pip(framework_path, upgrade_pip, version)
     if install_wheel:
         install("wheel", framework_path, version)
     if requirements_file:
