@@ -96,9 +96,9 @@ def main():
         install_extras(
             framework_path,
             version=short_version,
-            requirements_file=options.pip_requirements,
             install_wheel=options.install_wheel,
             upgrade_pip=options.upgrade_pip,
+            requirements_file=options.pip_requirements,
         )
         if fix_other_things(framework_path, short_version):
             print()

@@ -83,8 +83,8 @@ def install_requirements(requirements_file, framework_path, version):
     subprocess.check_call(cmd)
 
 
-def install_extras(framework_path, version="2.7", requirements_file=None,
-                   install_wheel, upgrade_pip):
+def install_extras(framework_path, version="2.7", install_wheel, upgrade_pip,
+                   requirements_file=None):
     """install all extra pkgs into Python framework path"""
     print()
     ensure_pip(framework_path, version)
