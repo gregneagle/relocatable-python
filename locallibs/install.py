@@ -52,7 +52,7 @@ def install(pkgname, framework_path, version):
     subprocess.check_call(cmd)
 
 
-def upgrade_pip(framework_path, version):
+def upgrade_pip_install(framework_path, version):
     """Use pip to upgrade pip"""
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version
@@ -89,7 +89,7 @@ def install_extras(framework_path, install_wheel, upgrade_pip, version="2.7",
     print()
     ensure_pip(framework_path, version)
     if upgrade_pip:
-        upgrade_pip(framework_path, version)
+        upgrade_pip_install(framework_path, version)
     if install_wheel:
         install("wheel", framework_path, version)
     if requirements_file:
