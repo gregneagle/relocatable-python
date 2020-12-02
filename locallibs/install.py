@@ -52,6 +52,19 @@ def install(pkgname, framework_path, version):
     subprocess.check_call(cmd)
 
 
+def upgrade_pip(framework_path, version):
+    """Use pip to upgrade pip"""
+    python_path = os.path.join(
+        framework_path, "Versions", version, "bin/python" + version
+    )
+    if not os.path.exists(python_path):
+        print("No python at %s" % python_path, file=sys.stderr)
+        return
+    cmd = [python_path, "-s", "-m", "pip", "install", "--upgrade", "pip"]
+    print("Upgrading pip installation...")
+    subprocess.check_call(cmd)
+
+
 def install_requirements(requirements_file, framework_path, version):
     """Use pip to install a Python pkg into framework_path"""
     python_path = os.path.join(
@@ -70,10 +83,15 @@ def install_requirements(requirements_file, framework_path, version):
     subprocess.check_call(cmd)
 
 
-def install_extras(framework_path, version="2.7", requirements_file=None):
+def install_extras(framework_path, version="2.7", requirements_file=None,
+                   install_wheel, upgrade_pip):
     """install all extra pkgs into Python framework path"""
     print()
     ensure_pip(framework_path, version)
+    if upgrade_pip:
+        upgrade_pip(framework_path, version)
+    if install_wheel:
+        install("wheel", framework_path, version)
     if requirements_file:
         install_requirements(requirements_file, framework_path, version)
     elif version.startswith("2."):
