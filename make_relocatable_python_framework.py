@@ -41,6 +41,12 @@ def main():
         help="Override the base URL used to download the framework.",
     )
     parser.add_option(
+        "--install-wheel",
+        default=False,
+        action="store_true",
+        help="Install wheel prior to installing extra python modules."
+    )
+    parser.add_option(
         "--os-version",
         default=get.DEFAULT_OS_VERSION,
         help="Override the macOS version of the downloaded pkg. "
@@ -67,6 +73,12 @@ def main():
         action="store_false",
         help="Do not unsign binaries and libraries after they are relocatablized."
     )
+    parser.add_option(
+        "--upgrade-pip",
+        default=False,
+        action="store_true",
+        help="Upgrade pip prior to installing extra python modules."
+    )
     parser.set_defaults(unsign=True)
     options, _arguments = parser.parse_args()
 
@@ -85,6 +97,8 @@ def main():
             framework_path,
             version=short_version,
             requirements_file=options.pip_requirements,
+            install_wheel=options.install_wheel,
+            upgrade_pip=options.upgrade_pip,
         )
         if fix_other_things(framework_path, short_version):
             print()
