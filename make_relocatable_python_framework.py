@@ -95,10 +95,10 @@ def main():
         short_version = ".".join(options.python_version.split(".")[0:2])
         install_extras(
             framework_path,
-            install_wheel=options.install_wheel,
-            upgrade_pip=options.upgrade_pip,
             version=short_version,
             requirements_file=options.pip_requirements,
+            install_wheel=options.install_wheel,
+            upgrade_pip=options.upgrade_pip,
         )
         if fix_other_things(framework_path, short_version):
             print()
