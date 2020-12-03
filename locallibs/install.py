@@ -16,7 +16,6 @@
 """Functions to pip install extra modules in our framework"""
 
 from __future__ import print_function
-from os.path import expanduser
 
 import os
 import subprocess
@@ -88,15 +87,16 @@ def install_extras(framework_path, version="2.7", requirements_file=None,
                    install_wheel=False, upgrade_pip=False):
     """install all extra pkgs into Python framework path"""
     print()
-    python_guard_path = expanduser("~/Library/Python/%s") % version
+    python_guard_path = os.path.expanduser("~/Library/Python/%s") % version
     if os.path.exists(python_guard_path):
         print('*********************************************************')
         print('*** Python user files exist that conflict with the    ***')
         print('*** version of relocatable python you are trying to   ***')
-        print('*** create. This will likely result in site-packages  ***')
-        print('*** that are not installed or out-of-date. Please     ***')
-        print('*** remove these files or create this package on a    ***')
-        print('*** clean computer. The files are located at:         ***')
+        print('*** create. This can result in extra python modules   ***')
+        print('*** not being installed properly or out of date.      ***')
+        print('*** Please remove these files or create this package  ***')
+        print('*** under a fresh user account.                       ***')
+        print('*** The files are located at:                         ***')
         print('*** %s ***' % python_guard_path)
         print('*********************************************************')
         print()
