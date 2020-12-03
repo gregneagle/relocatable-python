@@ -87,7 +87,8 @@ def install_extras(framework_path, version="2.7", requirements_file=None,
                    install_wheel=False, upgrade_pip=False):
     """install all extra pkgs into Python framework path"""
     print()
-    python_guard_path = os.path.expanduser("~/Library/Python/%s") % version
+    python_guard_path = os.path.expanduser(
+        "~/Library/Python/%s/lib/python/site-packages") % version
     if os.path.exists(python_guard_path):
         print('*********************************************************')
         print('*** Python user files exist that conflict with the    ***')
