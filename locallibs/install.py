@@ -87,6 +87,20 @@ def install_extras(framework_path, version="2.7", requirements_file=None,
                    install_wheel=False, upgrade_pip=False):
     """install all extra pkgs into Python framework path"""
     print()
+    python_guard_path = os.path.expanduser(
+        "~/Library/Python/%s/lib/python/site-packages") % version
+    if os.path.exists(python_guard_path):
+        print('*********************************************************')
+        print('*** Python user files exist that conflict with the    ***')
+        print('*** version of relocatable python you are trying to   ***')
+        print('*** create. This can result in extra python modules   ***')
+        print('*** not being installed properly or out of date.      ***')
+        print('*** Please remove these files or create this package  ***')
+        print('*** under a fresh user account.                       ***')
+        print('*** The files are located at:                         ***')
+        print('*** %s ***' % python_guard_path)
+        print('*********************************************************')
+        print()
     ensure_pip(framework_path, version)
     if upgrade_pip:
         upgrade_pip_install(framework_path, version)
