@@ -41,10 +41,10 @@ def main():
         help="Override the base URL used to download the framework.",
     )
     parser.add_option(
-        "--install-wheel",
-        default=False,
-        action="store_true",
-        help="Install wheel prior to installing extra python modules."
+        "--no-wheel",
+        dest="install_wheel",
+        action="store_false",
+        help="Do not install wheel prior to installing extra python modules."
     )
     parser.add_option(
         "--os-version",
@@ -74,11 +74,13 @@ def main():
         help="Do not unsign binaries and libraries after they are relocatablized."
     )
     parser.add_option(
-        "--upgrade-pip",
-        default=False,
-        action="store_true",
-        help="Upgrade pip prior to installing extra python modules."
+        "--no-upgrade-pip",
+        dest="upgrade_pip",
+        action="store_false",
+        help="Do not upgrade pip prior to installing extra python modules."
     )
+    parser.set_defaults(install_wheel=True)
+    parser.set_defaults(upgrade_pip=True)
     parser.set_defaults(unsign=True)
     options, _arguments = parser.parse_args()
 
