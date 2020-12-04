@@ -74,7 +74,7 @@ def install_requirements(requirements_file, install_wheel, framework_path,
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
-    if version.startswith("3.9") and not install_wheel:
+    if version.startswith("3.9"):
         # nasty hack to get xattr to install under 3.9.1rc1
         with open(requirements_file) as rfile:
             if "xattr" in rfile.read():
