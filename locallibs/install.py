@@ -65,8 +65,8 @@ def upgrade_pip_install(framework_path, version):
     subprocess.check_call(cmd)
 
 
-def install_requirements(requirements_file, install_wheel, framework_path,
-                         version):
+def install_requirements(requirements_file, install_wheel, upgrade_pip,
+                         framework_path, version):
     """Use pip to install a Python pkg into framework_path"""
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version
@@ -79,6 +79,9 @@ def install_requirements(requirements_file, install_wheel, framework_path,
         with open(requirements_file) as rfile:
             if "xattr" in rfile.read():
                 install("cffi", framework_path, version)
+    # We can't upgrade pip until _after_ this hack for 3.9.1 RC1
+    if upgrade_pip:
+        upgrade_pip_install(framework_path, version)
     cmd = [python_path, "-s", "-m", "pip", "install", "-r", requirements_file]
     print("Installing modules from %s..." % requirements_file)
     subprocess.check_call(cmd)
@@ -103,13 +106,11 @@ def install_extras(framework_path, version="2.7", requirements_file=None,
         print('*********************************************************')
         print()
     ensure_pip(framework_path, version)
-    if upgrade_pip:
-        upgrade_pip_install(framework_path, version)
     if install_wheel:
         install("wheel", framework_path, version)
     if requirements_file:
-        install_requirements(requirements_file, install_wheel, framework_path,
-                             version)
+        install_requirements(requirements_file, install_wheel, upgrade_pip,
+                             framework_path, version)
     elif version.startswith("2."):
         for pkgname in PYTHON2_EXTRA_PKGS:
             print()
