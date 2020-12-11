@@ -23,9 +23,6 @@ import subprocess
 import sys
 
 
-UNSIGN_TOOL = "/usr/bin/codesign"
-
-
 def ensure_current_version_link(framework_path, short_version):
     '''Make sure the framework has Versions/Current'''
     versions_current_path = os.path.join(framework_path, "Versions/Current")
@@ -128,10 +125,15 @@ def fix_other_things(framework_path, short_version):
 
 def fix_broken_signatures(files_relocatablized):
     """
-    Unsign the binaries and libraries that were relocatablized to avoid
-    them having corrupted signatures.
+    Re-sign the binaries and libraries that were relocatablized with ad-hoc 
+    signatures to avoid them having invalid signatures and to allow them to
+    run on Apple Silicon
     """
+    CODESIGN_CMD = ["/usr/bin/codesign", 
+                    "-s", "-", "--deep", "--force", 
+                    "--preserve-metadata=identifier,entitlements,flags,runtime"]
     for pathname in files_relocatablized:
-        print("Removing signature from %s because it is no longer valid."
+        print("Re-signing %s with ad-hoc signature..."
               % pathname)
-        subprocess.check_call([UNSIGN_TOOL, "--remove-signature", pathname])
+        cmd = CODESIGN_CMD + [pathname]
+        subprocess.check_call(cmd)
