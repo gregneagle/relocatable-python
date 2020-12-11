@@ -39,7 +39,7 @@ def ensure_pip(framework_path, version):
     subprocess.check_call(cmd)
 
 
-def install(pkgname, framework_path, version, compile=False):
+def install(pkgname, framework_path, version):
     """Use pip to install a Python pkg into framework_path"""
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version
@@ -48,9 +48,6 @@ def install(pkgname, framework_path, version, compile=False):
         print("No python at %s" % python_path, file=sys.stderr)
         return
     cmd = [python_path, "-s", "-m", "pip", "install", pkgname]
-    # If compile is set to true, pass --no-binary to force pip to compile source
-    if compile:
-        cmd += ["--no-binary", ":all:"]
     print("Installing %s..." % pkgname)
     subprocess.check_call(cmd)
 
@@ -76,18 +73,13 @@ def install_requirements(requirements_file, framework_path, version):
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
-    if version.startswith("3.9"):
-        # nasty hack to get xattr to install under 3.9.1rc1
-        with open(requirements_file) as rfile:
-            if "xattr" in rfile.read():
-                install("cffi", framework_path, version, compile=True)
     cmd = [python_path, "-s", "-m", "pip", "install", "-r", requirements_file]
     print("Installing modules from %s..." % requirements_file)
     subprocess.check_call(cmd)
 
 
 def install_extras(framework_path, version="2.7", requirements_file=None,
-                   install_wheel=False, upgrade_pip=False):
+                   upgrade_pip=False):
     """install all extra pkgs into Python framework path"""
     print()
     python_guard_path = os.path.expanduser(
@@ -107,8 +99,6 @@ def install_extras(framework_path, version="2.7", requirements_file=None,
     ensure_pip(framework_path, version)
     if upgrade_pip:
         upgrade_pip_install(framework_path, version)
-    if install_wheel:
-        install("wheel", framework_path, version)
     if requirements_file:
         install_requirements(requirements_file, framework_path, version)
     elif version.startswith("2."):
