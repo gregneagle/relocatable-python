@@ -13,16 +13,17 @@ Currently tested versions:
 Requires at least the command-line developer tools; might require a full Xcode install.
 
 Basic use -- make a Python.framework in the current working directory:
-./make_relocatable_python_framework
+./make_relocatable_python_framework.py
 
 Specifying a target destination for the framework:
-./make_relocatable_python_framework --destination ~/Desktop
+./make_relocatable_python_framework.py --destination ~/Desktop
 
 Specifying a different Python version:
-./make_relocatable_python_framework --python-version 3.7.4
+./make_relocatable_python_framework.py --python-version 3.7.4
 
 More options:
-./make_relocatable_python_framework --help
+./make_relocatable_python_framework.py --help
 
 NOTE: as of this commit: https://github.com/gregneagle/relocatable-python/commit/f4c4110f36ac1cb60b8253c2e04eaf34804f7303, any signed binaries or libraries within the framework will have their signatures removed. The "relocatablizing" process modifies these files, making any signature invalid. Rather than leave an invalid signature, which might seem like potential malware (and which currently causes at least one well-known security tool to _crash_), it's better to remove the invalid signature all together.
+
 
