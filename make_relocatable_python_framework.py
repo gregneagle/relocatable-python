@@ -73,8 +73,20 @@ def main():
         action="store_true",
         help="Upgrade pip prior to installing extra python modules."
     )
+    parser.add_option(
+        "--without-pip",
+        default=False,
+        action="store_true",
+        help="Don't make pip available, or install any extra python modules."
+    )
     parser.set_defaults(unsign=True)
     options, _arguments = parser.parse_args()
+
+    if options.without_pip:
+        for opt_name in ('--pip-requirements', '--upgrade-pip'):
+            opt = parser.get_option(opt_name)
+            if getattr(options, opt.dest):
+                parser.error("options --without-pip and %s are mutually exclusive" % opt_name)
 
     framework_path = get.FrameworkGetter(
         python_version=options.python_version,
@@ -87,12 +99,13 @@ def main():
         if options.unsign:
             fix_broken_signatures(files_relocatablized)
         short_version = ".".join(options.python_version.split(".")[0:2])
-        install_extras(
-            framework_path,
-            version=short_version,
-            requirements_file=options.pip_requirements,
-            upgrade_pip=options.upgrade_pip,
-        )
+        if not options.without_pip:
+            install_extras(
+                framework_path,
+                version=short_version,
+                requirements_file=options.pip_requirements,
+                upgrade_pip=options.upgrade_pip,
+            )
         if fix_other_things(framework_path, short_version):
             print()
             print("Done!")
