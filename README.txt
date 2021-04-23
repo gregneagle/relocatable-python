@@ -24,6 +24,10 @@ Specifying a different Python version:
 More options:
 ./make_relocatable_python_framework.py --help
 
-NOTE: as of this commit: https://github.com/gregneagle/relocatable-python/commit/f4c4110f36ac1cb60b8253c2e04eaf34804f7303, any signed binaries or libraries within the framework will have their signatures removed. The "relocatablizing" process modifies these files, making any signature invalid. Rather than leave an invalid signature, which might seem like potential malware (and which currently causes at least one well-known security tool to _crash_), it's better to remove the invalid signature all together.
+NOTES: 
+
+- As of this commit: https://github.com/gregneagle/relocatable-python/commit/f4c4110f36ac1cb60b8253c2e04eaf34804f7303, any signed binaries or libraries within the framework will have their signatures removed. The "relocatablizing" process modifies these files, making any signature invalid. Rather than leave an invalid signature, which might seem like potential malware (and which currently causes at least one well-known security tool to _crash_), it's better to remove the invalid signature all together.
+
+- As of this commit: https://github.com/gregneagle/relocatable-python/commit/903c708a01d1a2444ea5648114f3acf6e7f94fd7, instead of removing the signature, we replace it with an ad-hoc signature. This is required for the code to actually run on Apple silicon.
 
 
