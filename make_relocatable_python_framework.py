@@ -44,7 +44,7 @@ def main():
         "--os-version",
         default=get.DEFAULT_OS_VERSION,
         help="Override the macOS version of the downloaded pkg. "
-        'Current supported versions are "10.6" and "10.9". '
+        'Current supported versions are "10.6", "10.9", and "11". '
         "Not all Python version and macOS version combinations are valid.",
     )
     parser.add_option(

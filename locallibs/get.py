@@ -58,7 +58,12 @@ class FrameworkGetter(object):
     def download(self):
         """Downloads a macOS installer pkg from python.org.
            Returns path to the download."""
-        url = self.base_url % (
+        if self.base_url == DEFAULT_BASEURL and \
+           not self.os_version.startswith('10'):
+            base_url = self.base_url.replace('macosx', 'macos')
+        else:
+            base_url = self.base_url
+        url = base_url % (
             self.python_version,
             self.python_version,
             self.os_version,
