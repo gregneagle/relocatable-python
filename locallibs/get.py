@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import re
 
 CURL = "/usr/bin/curl"
 DITTO = "/usr/bin/ditto"
@@ -29,6 +30,9 @@ PKGUTIL = "/usr/sbin/pkgutil"
 DEFAULT_BASEURL = "https://www.python.org/ftp/python/%s/python-%s-macosx%s.pkg"
 DEFAULT_PYTHON_VERSION = "2.7.15"
 DEFAULT_OS_VERSION = "10.9"
+# The version "3.10b1" is fetched from the directory "3.10"
+# This regex lets you convert 3.10b1 -> 3.10
+BASE_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+(\.[0-9]+)")
 
 
 class FrameworkGetter(object):
@@ -64,7 +68,7 @@ class FrameworkGetter(object):
         else:
             base_url = self.base_url
         url = base_url % (
-            self.python_version,
+            BASE_VERSION_RE.match(self.python_version).group(0),
             self.python_version,
             self.os_version,
         )
