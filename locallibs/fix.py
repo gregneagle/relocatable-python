@@ -65,9 +65,12 @@ def is_framework_shebang(framework_path, text):
     this_framework_shebang = (
         b"#!" + os.path.abspath(framework_path).encode("UTF-8"))
     default_framework_shebang = b"#!/Library/Frameworks/Python.framework"
+    xcode_shebang = b"#!/Library/Developer/CommandLineTools/usr/bin/python3"
     if text.startswith(this_framework_shebang):
         return True
     if text.startswith(default_framework_shebang):
+        return True
+    if text.startswith(xcode_shebang):
         return True
     return False
 
@@ -125,12 +128,12 @@ def fix_other_things(framework_path, short_version):
 
 def fix_broken_signatures(files_relocatablized):
     """
-    Re-sign the binaries and libraries that were relocatablized with ad-hoc 
+    Re-sign the binaries and libraries that were relocatablized with ad-hoc
     signatures to avoid them having invalid signatures and to allow them to
     run on Apple Silicon
     """
-    CODESIGN_CMD = ["/usr/bin/codesign", 
-                    "-s", "-", "--deep", "--force", 
+    CODESIGN_CMD = ["/usr/bin/codesign",
+                    "-s", "-", "--deep", "--force",
                     "--preserve-metadata=identifier,entitlements,flags,runtime"]
     for pathname in files_relocatablized:
         print("Re-signing %s with ad-hoc signature..."
