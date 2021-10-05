@@ -97,15 +97,15 @@ def install_extras(framework_path, version="2.7", requirements_file=None,
         print('*********************************************************')
         print()
     ensure_pip(framework_path, version)
-    if version.startswith("2."):
+    if upgrade_pip:
+        upgrade_pip_install(framework_path, version)
+    if requirements_file and version.startswith("2.x"):
         for pkgname in PYTHON2_EXTRA_PKGS:
             print()
             install(pkgname, framework_path, version)
-    elif version.startswith("3."):
+        install_requirements(requirements_file, framework_path, version)
+    elif requirements_file and version.startswith("3."):
         for pkgname in PYTHON3_EXTRA_PKGS:
             print()
             install(pkgname, framework_path, version)
-    if upgrade_pip:
-        upgrade_pip_install(framework_path, version)
-    if requirements_file:
         install_requirements(requirements_file, framework_path, version)
