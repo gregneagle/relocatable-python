@@ -59,20 +59,17 @@ def relativize_interpreter_path(framework_path, script_dir, shebang_line):
 
 
 def is_framework_shebang(framework_path, text):
-    '''Returns a boolean to indicate if the text starts with a shebang
+    """Returns a boolean to indicate if the text starts with a shebang
     referencing the framework_path or the default
-    /Library/Frameworks/Python.framework path'''
-    this_framework_shebang = (
-        b"#!" + os.path.abspath(framework_path).encode("UTF-8"))
-    default_framework_shebang = b"#!/Library/Frameworks/Python.framework"
-    xcode_shebang = b"#!/Library/Developer/CommandLineTools/usr/bin/python3"
-    if text.startswith(this_framework_shebang):
-        return True
-    if text.startswith(default_framework_shebang):
-        return True
-    if text.startswith(xcode_shebang):
-        return True
-    return False
+    /Library/Frameworks/Python.framework path"""
+    this_framework_shebang = b"#!" + os.path.abspath(framework_path).encode("UTF-8")
+    prefixes = [
+        this_framework_shebang,
+        b"#!/Library/Frameworks/Python.framework",
+        b"#!/Library/Developer/CommandLineTools/usr/bin/python3",
+        b"#!/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    ]
+    return any(text.startswith(x) for x in prefixes)
 
 
 def fix_script_shebangs(framework_path, short_version):
