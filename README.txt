@@ -4,7 +4,7 @@ NOTE: while the resulting frameworks (and interpreters) have been successfully u
 
 A relocatable Python.framework is ideal for embedding into an application's Frameworks directory, and can even be used to get PyObjC-based apps and tools running in the macOS Recovery environment, which does not include Python.
 
-The Python version defaults to 2.7.15, and minimum (or target) macOS version is 10.9. Currently offered versions of pip and PyObjC are installed, as is xattr 0.6.4 (this is the version included with macOS High Sierra -- the current version has issues running in Recovery boot)
+The Python version defaults to 2.7.15, and minimum (or target) macOS version is 10.9. No modules are automatically installed. Previously, the highest supported versions of pip and PyObjC are installed, as is xattr 0.6.4 (this is the version included with macOS High Sierra -- the current version has issues running in Recovery boot). To install these, use --pip-requirements=requirements_python2_recommended.txt to mimmic old behavior. In previous versions of this tool on Python versions 3.x and higher, certain modules (xattr, cffi, six and pyobjc) were installed. These can be installed via --pip-requirements=requirements_python3_recommended.txt.
 
 Currently tested versions:
     Python version 2.7.15 with macOS deployment target 10.9+
