@@ -1,4 +1,4 @@
-wheel
+--no-binary :all:
 xattr
 cffi
 pyobjc

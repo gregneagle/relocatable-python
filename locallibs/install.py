@@ -101,11 +101,11 @@ def install_extras(
 
     if not without_pip:
         ensure_pip(framework_path, version)
+        install("wheel", framework_path, version)
         if upgrade_pip:
             upgrade_pip_install(framework_path, version)
         if requirements_file:
             print()
-            install("wheel", framework_path, version)
             install_requirements(requirements_file, framework_path, version)
     else:
         print("Skipping all requirements, packages, etc due to without-pip specified")
