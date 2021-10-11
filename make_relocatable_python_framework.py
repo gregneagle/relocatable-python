@@ -58,8 +58,7 @@ def main():
         "--pip-requirements",
         default=None,
         help="Path to a pip freeze requirements.txt file that describes extra "
-        "Python modules to be installed. If not provided, certain useful "
-        "modules for macOS will be installed.",
+        "Python modules to be installed. If not provided, no modules will be installed.",
     )
     parser.add_option(
         "--no-unsign",
@@ -73,9 +72,14 @@ def main():
         action="store_true",
         help="Upgrade pip prior to installing extra python modules."
     )
+    parser.add_option(
+        "--without-pip",
+        default=False,
+        action="store_true",
+        help="Do not install pip."
+    )
     parser.set_defaults(unsign=True)
     options, _arguments = parser.parse_args()
-
     framework_path = get.FrameworkGetter(
         python_version=options.python_version,
         os_version=options.os_version,
@@ -92,6 +96,7 @@ def main():
             version=short_version,
             requirements_file=options.pip_requirements,
             upgrade_pip=options.upgrade_pip,
+            without_pip=options.without_pip
         )
         if fix_other_things(framework_path, short_version):
             print()

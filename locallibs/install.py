@@ -21,10 +21,6 @@ import os
 import subprocess
 import sys
 
-PYTHON2_EXTRA_PKGS = ["xattr==0.6.4", "pyobjc"]
-
-PYTHON3_EXTRA_PKGS = ["cffi", "xattr", "pyobjc", "six"]
-
 
 def ensure_pip(framework_path, version):
     """Ensure pip is installed in our Python framework"""
@@ -78,34 +74,38 @@ def install_requirements(requirements_file, framework_path, version):
     subprocess.check_call(cmd)
 
 
-def install_extras(framework_path, version="2.7", requirements_file=None,
-                   upgrade_pip=False):
+def install_extras(
+    framework_path,
+    version="2.7",
+    requirements_file=None,
+    upgrade_pip=False,
+    without_pip=False,
+):
     """install all extra pkgs into Python framework path"""
     print()
-    python_guard_path = os.path.expanduser(
-        "~/Library/Python/%s/lib/python/site-packages") % version
+    python_guard_path = (
+        os.path.expanduser("~/Library/Python/%s/lib/python/site-packages") % version
+    )
     if os.path.exists(python_guard_path):
-        print('*********************************************************')
-        print('*** Python user files exist that conflict with the    ***')
-        print('*** version of relocatable python you are trying to   ***')
-        print('*** create. This can result in extra python modules   ***')
-        print('*** not being installed properly or out of date.      ***')
-        print('*** Please remove these files or create this package  ***')
-        print('*** under a fresh user account.                       ***')
-        print('*** The files are located at:                         ***')
-        print('*** %s ***' % python_guard_path)
-        print('*********************************************************')
+        print("*********************************************************")
+        print("*** Python user files exist that conflict with the    ***")
+        print("*** version of relocatable python you are trying to   ***")
+        print("*** create. This can result in extra python modules   ***")
+        print("*** not being installed properly or out of date.      ***")
+        print("*** Please remove these files or create this package  ***")
+        print("*** under a fresh user account.                       ***")
+        print("*** The files are located at:                         ***")
+        print("*** %s ***" % python_guard_path)
+        print("*********************************************************")
         print()
-    ensure_pip(framework_path, version)
-    if upgrade_pip:
-        upgrade_pip_install(framework_path, version)
-    if requirements_file:
-        install_requirements(requirements_file, framework_path, version)
-    elif version.startswith("2."):
-        for pkgname in PYTHON2_EXTRA_PKGS:
+
+    if not without_pip:
+        ensure_pip(framework_path, version)
+        install("wheel", framework_path, version)
+        if upgrade_pip:
+            upgrade_pip_install(framework_path, version)
+        if requirements_file:
             print()
-            install(pkgname, framework_path, version)
-    elif version.startswith("3."):
-        for pkgname in PYTHON3_EXTRA_PKGS:
-            print()
-            install(pkgname, framework_path, version)
+            install_requirements(requirements_file, framework_path, version)
+    else:
+        print("Skipping all requirements, packages, etc due to without-pip specified")

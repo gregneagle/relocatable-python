@@ -1,0 +1,5 @@
+--no-binary :all:
+xattr
+cffi
+pyobjc
+six
