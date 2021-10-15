@@ -115,5 +115,4 @@ class FrameworkGetter(object):
             self.extract_framework()
             return destination
         except subprocess.CalledProcessError as err:
-            print("%s" % err, file=sys.stderr)
-            return None
+            sys.exit("%s" % err)
