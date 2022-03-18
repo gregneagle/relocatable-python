@@ -26,6 +26,8 @@ More options:
 
 NOTES: 
 
+- As of this commit: https://github.com/gregneagle/relocatable-python/commit/0184e8b43f1ecde050b07feb1761fac2f7ce0c5c, make_relocatable_python_framework.py now uses Apple's Python 3 that is included with Xcode and the Command line development tools. Python 2 was removed from macOS with the release of macOS 12.3, and make_relocatable_python_framework.py requires other tools that are included with Xcode/Command Line development tools, so this is unlikely to break anyone except perhaps those using the tool on a very out-of-date macOS and/or Xcode.
+
 - As of this commit: https://github.com/gregneagle/relocatable-python/commit/f4c4110f36ac1cb60b8253c2e04eaf34804f7303, any signed binaries or libraries within the framework will have their signatures removed. The "relocatablizing" process modifies these files, making any signature invalid. Rather than leave an invalid signature, which might seem like potential malware (and which currently causes at least one well-known security tool to _crash_), it's better to remove the invalid signature all together.
 
 - As of this commit: https://github.com/gregneagle/relocatable-python/commit/903c708a01d1a2444ea5648114f3acf6e7f94fd7, instead of removing the signature, we replace it with an ad-hoc signature. This is required for the code to actually run on Apple silicon.
