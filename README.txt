@@ -32,4 +32,15 @@ NOTES:
 
 - As of this commit: https://github.com/gregneagle/relocatable-python/commit/903c708a01d1a2444ea5648114f3acf6e7f94fd7, instead of removing the signature, we replace it with an ad-hoc signature. This is required for the code to actually run on Apple silicon.
 
+UNIVERSAL PYTHON
 
+As of Python 3.9.11 (Mar 16, 2022), Python.org offers a Universal Python build. If you want to test if your framework is also fully universal, you can use the included "python_universal_tester.sh" script. It takes your version of Python as an argument:
+```
+% ./python_universal_tester.sh 3.10
+Using Python 3.10
+All files are universal!
+% echo $?
+0
+```
+
+The script must be run from the same directory as the built Python.framework. If any files are not universal, it will list them and exit 1.
