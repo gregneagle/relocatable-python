@@ -1,6 +1,11 @@
 #!/bin/bash
 
-[[ $1 == *"3."* ]] && echo "Using Python $1" || (echo "Invalid Python version" && exit 1)
+if [[ $1 == *"3."* ]]; then
+    echo "Using Python $1" 
+else
+    echo "Invalid Python version"
+    exit 1
+fi
 
 STATUS=0
 
@@ -15,9 +20,9 @@ if [ "$LIB_COUNT" != "$UNIVERSAL_COUNT" ] ; then
 fi
 
 # test some more files in the framework
-MORE_FILES="Python.framework/Versions/3.10/Resources/Python.app/Contents/MacOS/Python
+MORE_FILES="Python.framework/Versions/$1/Resources/Python.app/Contents/MacOS/Python
 Python.framework/Versions/Current/Python
-Python.framework/Versions/Current/bin/python3.10"
+Python.framework/Versions/Current/bin/python$1"
 
 for TESTFILE in $MORE_FILES ; do
     ARCH_TEST=$(file "$TESTFILE" | grep "2 architectures")
