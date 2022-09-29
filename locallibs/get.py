@@ -63,8 +63,11 @@ class FrameworkGetter(object):
             base_url = self.base_url.replace('macosx', 'macos')
         else:
             base_url = self.base_url
+        python_dir_version = self.python_version
+        if 'rc' in python_dir_version:
+            python_dir_version = python_dir_version[:python_dir_version.find('r')]
         url = base_url % (
-            self.python_version,
+            python_dir_version,
             self.python_version,
             self.os_version,
         )
