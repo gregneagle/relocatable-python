@@ -66,12 +66,17 @@ def install_requirements(requirements_file, framework_path, version):
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version
     )
+    headers_path = os.path.abspath(os.path.join(
+        framework_path, "Versions", version, "include/python" + version
+    ))
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
     cmd = [python_path, "-s", "-m", "pip", "install", "-r", requirements_file]
+    pip_env = os.environ
+    pip_env["CPPFLAGS"] = "-I%s" % headers_path
     print("Installing modules from %s..." % requirements_file)
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, env=pip_env)
 
 
 def install_extras(
