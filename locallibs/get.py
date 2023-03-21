@@ -70,7 +70,7 @@ class FrameworkGetter(object):
         )
         (file_handle, destination_path) = tempfile.mkstemp()
         os.close(file_handle)
-        cmd = [CURL, "-o", destination_path, url]
+        cmd = [CURL, "--fail", "-o", destination_path, url]
         print("Downloading %s..." % url)
         subprocess.check_call(cmd)
         self.downloaded_pkg_path = destination_path
@@ -115,5 +115,4 @@ class FrameworkGetter(object):
             self.extract_framework()
             return destination
         except subprocess.CalledProcessError as err:
-            print("%s" % err, file=sys.stderr)
-            return None
+            sys.exit("%s" % err)
