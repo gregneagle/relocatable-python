@@ -61,7 +61,7 @@ def upgrade_pip_install(framework_path, version):
     subprocess.check_call(cmd)
 
 
-def install_requirements(requirements_file, framework_path, version):
+def install_requirements(requirements_file, framework_path, version, pip_platform):
     """Use pip to install a Python pkg into framework_path"""
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version
@@ -69,10 +69,20 @@ def install_requirements(requirements_file, framework_path, version):
     headers_path = os.path.abspath(os.path.join(
         framework_path, "Versions", version, "include/python" + version
     ))
+    site_packages_path = os.path.join(
+        framework_path, "Versions", version, "lib/python" + version
+        + "/site-packages"
+    )
     if not os.path.exists(python_path):
         print("No python at %s" % python_path, file=sys.stderr)
         return
     cmd = [python_path, "-s", "-m", "pip", "install", "-r", requirements_file]
+
+    if pip_platform:
+        for platform in pip_platform:
+            cmd.append["--platform", platform]
+        cmd.append["--target==%s" % site_packages_path]
+
     pip_env = os.environ
     pip_env["CPPFLAGS"] = "-I%s" % headers_path
     print("Installing modules from %s..." % requirements_file)
@@ -85,6 +95,7 @@ def install_extras(
     requirements_file=None,
     upgrade_pip=False,
     without_pip=False,
+    pip_platform=None
 ):
     """install all extra pkgs into Python framework path"""
     print()
@@ -111,6 +122,6 @@ def install_extras(
             upgrade_pip_install(framework_path, version)
         if requirements_file:
             print()
-            install_requirements(requirements_file, framework_path, version)
+            install_requirements(requirements_file, framework_path, version, pip_platform)
     else:
         print("Skipping all requirements, packages, etc due to without-pip specified")

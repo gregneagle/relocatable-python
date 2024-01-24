@@ -78,6 +78,13 @@ def main():
         action="store_true",
         help="Do not install pip."
     )
+    parser.add_option(
+        "--pip-platform",
+        nargs=3,
+        help="Specify which platform the requirements should be downloaded for. "
+        "Default is to the platform of the running system. "
+        "Use this option multiple times to specify multiple platforms."
+    )
     parser.set_defaults(unsign=True)
     options, _arguments = parser.parse_args()
     framework_path = get.FrameworkGetter(
@@ -96,7 +103,8 @@ def main():
             version=short_version,
             requirements_file=options.pip_requirements,
             upgrade_pip=options.upgrade_pip,
-            without_pip=options.without_pip
+            without_pip=options.without_pip,
+            pip_platform=options.pip_platform
         )
         if fix_other_things(framework_path, short_version):
             print()
