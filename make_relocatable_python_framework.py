@@ -85,8 +85,26 @@ def main():
         "Default is to the platform of the running system. "
         "Use this option multiple times to specify multiple platforms."
     )
+    parser.add_option(
+        "--no-binary", dest="no_binary",
+        action="callback", callback=vararg_callback,
+        help="Do not use binary packages. "
+        "Can be supplied multiple times, and each time adds to the existing value. "
+        "Accepts either ':all:' to disable all binary packages, ':none:' to empty the set "
+        "(notice the colons), or one or more package names with commas between them (no colons)."
+    )
+    parser.add_option(
+        "--only-binary", dest="only_binary",
+        action="callback", callback=vararg_callback,
+        help="Do not use source packages. "
+        "Can be supplied multiple times, and each time adds to the existing value. "
+        "Accepts either ':all:' to disable all binary packages, ':none:' to empty the set "
+        "(notice the colons), or one or more package names with commas between them (no colons)."
+    )
     parser.set_defaults(unsign=True)
     options, _arguments = parser.parse_args()
+    if options.no_binary and options.only_binary:
+        parser.error("The options --no-binary and --only-binary are mutually exclusive")
     framework_path = get.FrameworkGetter(
         python_version=options.python_version,
         os_version=options.os_version,
@@ -104,7 +122,9 @@ def main():
             requirements_file=options.pip_requirements,
             upgrade_pip=options.upgrade_pip,
             without_pip=options.without_pip,
-            pip_platform=options.pip_platform
+            pip_platform=options.pip_platform,
+            no_binary=options.no_binary,
+            only_binary=options.only_binary
         )
         if fix_other_things(framework_path, short_version):
             print()

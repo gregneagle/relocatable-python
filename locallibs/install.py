@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import itertools
 import os
 import subprocess
 import sys
@@ -61,8 +62,28 @@ def upgrade_pip_install(framework_path, version):
     subprocess.check_call(cmd)
 
 
-def install_requirements(requirements_file, framework_path, version, pip_platform):
+def install_requirements(
+        requirements_file, framework_path, version, pip_platform, no_binary, only_binary):
     """Use pip to install a Python pkg into framework_path"""
+
+    def multi_value_option(option, values, separator=None):
+        """Helper function supply the same option with multiple value
+
+        Args:
+            option (str): the option name (e.g. --<option>)
+            values (list): a list of values that should be passed to the option
+            separator (str): if the option is separated by a value (e.g. "=") and 
+                each option value combo should be returned as a single string
+
+        Returns:
+            list: a flattened list of the option and values
+        """
+        if separator:
+            return list(itertools.chain.from_iterable(
+                [[option + separator + value] for value in values]
+            ))
+        return list(itertools.chain.from_iterable([[option, value] for value in values]))
+
     python_path = os.path.join(
         framework_path, "Versions", version, "bin/python" + version
     )
@@ -79,9 +100,14 @@ def install_requirements(requirements_file, framework_path, version, pip_platfor
     cmd = [python_path, "-s", "-m", "pip", "install", "-r", requirements_file]
 
     if pip_platform:
-        for platform in pip_platform:
-            cmd.append["--platform", platform]
-        cmd.append["--target=%s" % site_packages_path]
+        cmd.extend(multi_value_option("--platform", pip_platform))
+        cmd.append("--target=%s" % site_packages_path)
+
+    if no_binary:
+        cmd.extend(multi_value_option("--no-binary", no_binary, "="))
+
+    elif only_binary:
+        cmd.extend(multi_value_option("--only-binary", only_binary, "="))
 
     pip_env = os.environ
     pip_env["CPPFLAGS"] = "-I%s" % headers_path
@@ -95,7 +121,9 @@ def install_extras(
     requirements_file=None,
     upgrade_pip=False,
     without_pip=False,
-    pip_platform=None
+    pip_platform=None,
+    no_binary=None,
+    only_binary=None
 ):
     """install all extra pkgs into Python framework path"""
     print()
@@ -122,6 +150,7 @@ def install_extras(
             upgrade_pip_install(framework_path, version)
         if requirements_file:
             print()
-            install_requirements(requirements_file, framework_path, version, pip_platform)
+            install_requirements(
+                requirements_file, framework_path, version, pip_platform, no_binary, only_binary)
     else:
         print("Skipping all requirements, packages, etc due to without-pip specified")
