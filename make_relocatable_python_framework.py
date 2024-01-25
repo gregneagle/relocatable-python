@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import optparse
 
-from locallibs import get
+from locallibs import get, vararg_callback
 from locallibs.fix import fix_broken_signatures, fix_other_things
 from locallibs.install import install_extras
 from locallibs.relocatablizer import relocatablize
@@ -79,8 +79,8 @@ def main():
         help="Do not install pip."
     )
     parser.add_option(
-        "--pip-platform",
-        nargs=3,
+        "--pip-platform", dest="pip_platform",
+        action="callback", callback=vararg_callback,
         help="Specify which platform the requirements should be downloaded for. "
         "Default is to the platform of the running system. "
         "Use this option multiple times to specify multiple platforms."
