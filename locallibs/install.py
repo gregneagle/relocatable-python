@@ -81,7 +81,7 @@ def install_requirements(requirements_file, framework_path, version, pip_platfor
     if pip_platform:
         for platform in pip_platform:
             cmd.append["--platform", platform]
-        cmd.append["--target==%s" % site_packages_path]
+        cmd.append["--target=%s" % site_packages_path]
 
     pip_env = os.environ
     pip_env["CPPFLAGS"] = "-I%s" % headers_path
