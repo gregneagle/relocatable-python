@@ -81,15 +81,15 @@ def main():
     parser.add_option(
         "--pip-platform", dest="pip_platform",
         action="callback", callback=vararg_callback,
-        help="Specify which platform the requirements should be downloaded for. "
+        help="Specify which platform the pip should be downloaded for. "
         "Default is to the platform of the running system. "
-        "Use this option multiple times to specify multiple platforms."
+        "Multiple values can be passed to specify multiple platforms."
     )
     parser.add_option(
         "--no-binary", dest="no_binary",
         action="callback", callback=vararg_callback,
         help="Do not use binary packages. "
-        "Can be supplied multiple times, and each time adds to the existing value. "
+        "Multiple values can be passed, and each time adds to the existing value. "
         "Accepts either ':all:' to disable all binary packages, ':none:' to empty the set "
         "(notice the colons), or one or more package names with commas between them (no colons)."
     )
@@ -97,7 +97,7 @@ def main():
         "--only-binary", dest="only_binary",
         action="callback", callback=vararg_callback,
         help="Do not use source packages. "
-        "Can be supplied multiple times, and each time adds to the existing value. "
+        "Multiple values can be passed, and each time adds to the existing value. "
         "Accepts either ':all:' to disable all binary packages, ':none:' to empty the set "
         "(notice the colons), or one or more package names with commas between them (no colons)."
     )
