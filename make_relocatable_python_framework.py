@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import optparse
 
-from locallibs import get
+from locallibs import get, vararg_callback
 from locallibs.fix import fix_broken_signatures, fix_other_things
 from locallibs.install import install_extras
 from locallibs.relocatablizer import relocatablize
@@ -78,8 +78,33 @@ def main():
         action="store_true",
         help="Do not install pip."
     )
+    parser.add_option(
+        "--pip-platform", dest="pip_platform",
+        action="callback", callback=vararg_callback,
+        help="Specify which platform the pip should be downloaded for. "
+        "Default is to the platform of the running system. "
+        "Multiple values can be passed to specify multiple platforms."
+    )
+    parser.add_option(
+        "--no-binary", dest="no_binary",
+        action="callback", callback=vararg_callback,
+        help="Do not use binary packages. "
+        "Multiple values can be passed, and each time adds to the existing value. "
+        "Accepts either ':all:' to disable all binary packages, ':none:' to empty the set "
+        "(notice the colons), or one or more package names with commas between them (no colons)."
+    )
+    parser.add_option(
+        "--only-binary", dest="only_binary",
+        action="callback", callback=vararg_callback,
+        help="Do not use source packages. "
+        "Multiple values can be passed, and each time adds to the existing value. "
+        "Accepts either ':all:' to disable all binary packages, ':none:' to empty the set "
+        "(notice the colons), or one or more package names with commas between them (no colons)."
+    )
     parser.set_defaults(unsign=True)
     options, _arguments = parser.parse_args()
+    if options.no_binary and options.only_binary:
+        parser.error("The options --no-binary and --only-binary are mutually exclusive")
     framework_path = get.FrameworkGetter(
         python_version=options.python_version,
         os_version=options.os_version,
@@ -96,7 +121,10 @@ def main():
             version=short_version,
             requirements_file=options.pip_requirements,
             upgrade_pip=options.upgrade_pip,
-            without_pip=options.without_pip
+            without_pip=options.without_pip,
+            pip_platform=options.pip_platform,
+            no_binary=options.no_binary,
+            only_binary=options.only_binary
         )
         if fix_other_things(framework_path, short_version):
             print()
