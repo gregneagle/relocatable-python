@@ -125,17 +125,36 @@ def fix_other_things(framework_path, short_version):
             fix_script_shebangs(framework_path, short_version))
 
 
-def fix_broken_signatures(files_relocatablized):
-    """
-    Re-sign the binaries and libraries that were relocatablized with ad-hoc
-    signatures to avoid them having invalid signatures and to allow them to
-    run on Apple Silicon
-    """
-    CODESIGN_CMD = ["/usr/bin/codesign",
-                    "-s", "-", "--deep", "--force",
-                    "--preserve-metadata=identifier,entitlements,flags,runtime"]
-    for pathname in files_relocatablized:
-        print("Re-signing %s with ad-hoc signature..."
-              % pathname)
-        cmd = CODESIGN_CMD + [pathname]
-        subprocess.check_call(cmd)
+def is_signable_file(filepath):
+    # Only attempt to sign Mach-O binaries (executables, dylibs, .so)
+    try:
+        output = subprocess.check_output(['file', filepath], text=True)
+        return 'Mach-O' in output
+    except Exception:
+        return False
+
+def find_signable_files(framework_path):
+    signable_files = []
+    for root, _, files in os.walk(framework_path):
+        for filename in files:
+            if filename.endswith(('.so', '.dylib')) or filename.lower().startswith('python'):
+                full_path = os.path.join(root, filename)
+                if is_signable_file(full_path):
+                    signable_files.append(full_path)
+    return signable_files
+
+def fix_broken_signatures(framework_paths):
+    """Remove existing signatures and re-sign all signable files (with expected name formats)
+    (executables, .dylib, .so) in the given framework(s) with an ad hoc signature."""
+    if isinstance(framework_paths, str):
+        framework_paths = [framework_paths]
+    for framework_path in framework_paths:
+        signable_files = find_signable_files(framework_path)
+        for filepath in signable_files:
+            print(f"Stripping and ad hoc signing: {filepath}")
+            try:
+                subprocess.run(['codesign', '--remove-signature', filepath], check=True)
+            except subprocess.CalledProcessError:
+                # It's fine if there was no signature to remove
+                print(f"No existing signature to remove? for\n{filepath}", file=sys.stderr)
+            subprocess.run(['codesign', '-s', '-', '--force', filepath], check=True)

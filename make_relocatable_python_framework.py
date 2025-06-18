@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # encoding: utf-8
 #
-# Copyright 2018 Greg Neagle.
+# Copyright 2025 Greg Neagle and Mac Admins Open Source
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from __future__ import print_function
 import optparse
 
 from locallibs import get
-from locallibs.fix import fix_broken_signatures, fix_other_things
+from locallibs.fix import fix_other_things
 from locallibs.install import install_extras
 from locallibs.relocatablizer import relocatablize
 
@@ -61,12 +61,6 @@ def main():
         "Python modules to be installed. If not provided, no modules will be installed.",
     )
     parser.add_option(
-        "--no-unsign",
-        dest="unsign",
-        action="store_false",
-        help="Do not unsign binaries and libraries after they are relocatablized."
-    )
-    parser.add_option(
         "--upgrade-pip",
         default=False,
         action="store_true",
@@ -87,9 +81,7 @@ def main():
     ).download_and_extract(destination=options.destination)
 
     if framework_path:
-        files_relocatablized = relocatablize(framework_path)
-        if options.unsign:
-            fix_broken_signatures(files_relocatablized)
+        relocatablize(framework_path)
         short_version = ".".join(options.python_version.split(".")[0:2])
         install_extras(
             framework_path,

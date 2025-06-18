@@ -20,6 +20,7 @@ from __future__ import print_function
 import os
 import subprocess
 import sys
+from locallibs.fix import fix_broken_signatures
 
 
 def ensure_pip(framework_path, version):
@@ -81,7 +82,7 @@ def install_requirements(requirements_file, framework_path, version):
 
 def install_extras(
     framework_path,
-    version="2.7",
+    version="3.13",  # bumping to $latest, but only used if unset 
     requirements_file=None,
     upgrade_pip=False,
     without_pip=False,
@@ -103,6 +104,23 @@ def install_extras(
         print("*** %s ***" % python_guard_path)
         print("*********************************************************")
         print()
+
+    # Not removing broken PrivateHeaders symlinks, but could:
+    # for fw in ["Tk", "Tcl"]:
+    #     symlink = os.path.join(
+    #         framework_path,
+    #         "Versions",
+    #         version,
+    #         "Frameworks",
+    #         f"{fw}.framework",
+    #         "PrivateHeaders",
+    #     )
+    #     if os.path.islink(symlink) or os.path.exists(symlink):
+    #         print(f"Removing broken symlink or file: {symlink}")
+    #         os.unlink(symlink)
+
+    # Signature get broken as relocated so strip/adhoc before running ensurepip
+    fix_broken_signatures([framework_path])
 
     if not without_pip:
         ensure_pip(framework_path, version)
